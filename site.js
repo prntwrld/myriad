@@ -27,7 +27,7 @@ const vals = (c, p) => (c[p] || []).map(x => x.mainsnak?.datavalue?.value?.id).f
 const any = (list, set) => list.some(q => set.includes(q));
 const RULES = {
   "field-guide": c => has(c,"P225") || has(c,"P171"),
-  "cinema": c => has(c,"P4947") || has(c,"P1258") || any(vals(c,"P31"), ["Q11424","Q24869","Q202866","Q93204","Q5398426"]) ||
+  "cinema": c => has(c,"P4947") || has(c,"P1258") || any(vals(c,"P31"), ["Q11424","Q24869","Q202866","Q93204","Q5398426","Q3001152","Q201658"]) ||
     any(vals(c,"P106"), ["Q2526255","Q3455803","Q28389","Q222344","Q7042855","Q10800557","Q33999"]),
   /* MusicBrainz lists anyone with a credit (Godard has one), so a person counts only if music is their work */
   "metronome": c => any(vals(c,"P31"), ["Q215380","Q5741069","Q482994","Q7366","Q134556","Q188451"]) ||
@@ -45,14 +45,27 @@ const RULES = {
 const topicIn = (w, t) => w.ready ? `${ROOT}${w.id}/?t=${encodeURIComponent(t)}` : `${ROOT}?t=${encodeURIComponent(t)}`;
 const wingsFor = claims => WINGS.filter(w => { try { return RULES[w.id](claims || {}); } catch(e){ return false; } });
 
+/* When a topic plainly belongs to a wing with its own topic pages, a search on the main page goes straight there.
+   Plainly: it's the wing's own kind of thing (a film), or a person whose first-listed occupation is the wing's work,
+   or the only wing it fits (a film movement). An actor who is mainly a singer stays on the main page. */
+const OWN = {
+  /* films, film movements and film genres, and people whose first-listed work is film */
+  "cinema": c => has(c,"P4947") || any(vals(c,"P31"), ["Q11424","Q24869","Q202866","Q93204","Q24862","Q226730","Q506240","Q3001152","Q201658"]) ||
+    ["Q2526255","Q3455803","Q28389","Q222344","Q7042855","Q10800557","Q33999"].includes(vals(c,"P106")[0])
+};
+const takeover = claims => {
+  const ws = wingsFor(claims).filter(w => w.ready);
+  return ws.find(w => OWN[w.id]?.(claims || {})) || (wingsFor(claims).length === 1 ? ws[0] : null) || null;
+};
+
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const here = document.body.dataset.wing || "";
 
-/* the nav bar: Myriad, the six wings (each marked with a diamond in its colour), and Telescope */
+/* the nav bar: Myriad, the six wings (each marked with a diamond in its colour), and Télescope */
 document.currentScript.insertAdjacentHTML("afterend", `<nav class="wings wrap" aria-label="Myriad and its wings">
   <a class="w-home" href="${ROOT}"${here ? "" : ` aria-current="page"`}>Myriad</a>
   ${WINGS.map(w => `<a href="${ROOT}${w.id}/" style="--c:var(--c-${w.id})"${w.id === here ? ` aria-current="page"` : ""}><i aria-hidden="true"></i>${esc(w.name)}</a>`).join("")}
-  <a class="w-out" href="${TELESCOPE}" target="_blank" rel="noopener" title="Telescope — a sister site">Telescope<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4 2h6v6M10 2 3 9" fill="none" stroke="currentColor" stroke-width="1.2"/></svg></a>
+  <a class="w-out" href="${TELESCOPE}" target="_blank" rel="noopener" title="Télescope — a sister site">Télescope<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4 2h6v6M10 2 3 9" fill="none" stroke="currentColor" stroke-width="1.2"/></svg></a>
 </nav>`);
 
 /* the theme switch cycles light → dark → Y2K, and remembers the choice */
@@ -77,5 +90,5 @@ document.addEventListener("DOMContentLoaded", () => {
   labelTheme(btn);
 });
 
-window.Myriad = {ROOT, WINGS, TELESCOPE, wingsFor, topicIn, esc};
+window.Myriad = {ROOT, WINGS, TELESCOPE, wingsFor, takeover, topicIn, esc};
 }

@@ -245,7 +245,7 @@ async function openTopic(title, others=[], query=""){
   $("lead").innerHTML = `<h1>${esc(name)}</h1>
     ${s.description ? `<p class="desc">${esc(s.description)}</p>` : ""}
     <p class="extract">${esc(disamb ? "This name can mean several things. Try a more exact search." : s.extract)}</p>
-    <p class="readon"><b>Read more</b><span id="readon"><a href="${esc(s.content_urls?.desktop?.page)}" ${ext}>Wikipedia</a><a href="${ROOT}?t=${encodeURIComponent(name)}">Myriad's full page</a></span></p>
+    <p class="readon"><b>Read more</b><span id="readon"><a href="${esc(s.content_urls?.desktop?.page)}" ${ext}>Wikipedia</a><a href="${ROOT}?t=${encodeURIComponent(name)}&stay">Myriad's general page</a></span></p>
     ${otherLinks.length ? `<p class="others">Did you mean: ${otherLinks.map(o => `<a href="${here(o)}">${esc(o)}</a>`).join(" · ")}</p>` : ""}`;
   const thumb = s.thumbnail?.source, orig = s.originalimage;
   const img = thumb && orig?.width > 720 && /\/\d+px-/.test(thumb) ? thumb.replace(/\/\d+px-/, "/720px-") : orig?.source || thumb;
@@ -435,7 +435,7 @@ async function collectionPage(ctx){
   if(!alive(ctx)) return;
   const films = filmRows(rows);
   if(films.length < 3){
-    $("views").innerHTML = `<section class="section"><p class="status">This doesn't look like a film topic. <a href="${ROOT}?t=${encodeURIComponent(name)}">Open it on Myriad's main page</a>, or search for a film, a filmmaker, or a movement.</p></section>`;
+    $("views").innerHTML = `<section class="section"><p class="status">This doesn't look like a film topic. <a href="${ROOT}?t=${encodeURIComponent(name)}&stay">Open it on Myriad's main page</a>, or search for a film, a filmmaker, or a movement.</p></section>`;
     return;
   }
   films.sort((a, b) => a.year - b.year);
