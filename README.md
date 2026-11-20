@@ -4,8 +4,6 @@
 
 Search anything and Myriad builds one page for it: a summary and picture, quick facts, a map, the article's sections, other encyclopedias to read it in, further reading, related topics, and shelves of free books, museum objects, archive finds and historic photographs.
 
-Live at [myriadof.info](https://myriadof.info)
-
 ## Sources
 - [Wikipedia](https://www.wikipedia.org) and [Wikidata](https://www.wikidata.org)
 - [OpenStreetMap](https://www.openstreetmap.org)
