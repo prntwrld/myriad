@@ -157,7 +157,6 @@ main{padding-bottom:24px}
   body.on #f{grid-column:1 / -1;grid-row:2}
   body.on .theme{grid-column:2;grid-row:1}
   .hero{grid-template-columns:minmax(0,1fr);gap:28px;margin-top:24px}
-  .side{order:-1}
   .pic{max-height:260px}
   .shelf{--h:180px}
   .item{flex-basis:150px;padding:0 10px}
