@@ -1145,3 +1145,9 @@ button.fg-play:hover,.fg-track.on button.fg-play{background:var(--accent);color:
   .fg-pair:not(:has(> .section[hidden])) .fg-range{grid-template-columns:minmax(0,1fr);gap:26px}
   .fg-pair:not(:has(> .section[hidden])) .fg-map{height:300px}
 }
+/* quick facts continued under a short summary (see site.js): no heading unless all of them came */
+.facts .moved,.facts.emptied{display:none}
+.lead .facts-more{margin-top:26px}
+.lead .facts-more:not(.whole) .label{display:none}
+.lead .facts-more:not(.whole) dl{border-top:1px solid var(--line)}
+:root[data-theme="y2k"] .lead .facts-more{background:none;border:0;box-shadow:none;padding:0}

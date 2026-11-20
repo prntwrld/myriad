@@ -99,5 +99,48 @@ document.addEventListener("DOMContentLoaded", () => {
   labelTheme(btn);
 });
 
+/* Topic pages: the picture and the quick facts stand beside the summary. When a short summary would leave a hole
+   beneath it, the last facts continue under the summary instead, just enough rows to bring the two columns level
+   (all of them, if need be). Every page builds its topic header the same way (#lead beside .side holding #facts),
+   so this serves them all. Each check starts afresh from the facts as the page wrote them, so it can't flip to and fro,
+   and a page that rewrites its facts later is simply balanced again. */
+const GAP = 60;
+let balancing = 0;
+/* how tall a column's content is (the grid stretches both columns to the taller one, so its own height won't say) */
+const contentH = el => { const kids = [...el.children].filter(k => !k.hidden && k.offsetParent); return kids.length ? kids.at(-1).getBoundingClientRect().bottom - el.getBoundingClientRect().top : 0; };
+const balanceHero = () => {
+  const lead = document.getElementById("lead"), facts = document.getElementById("facts"), side = facts?.closest(".hero")?.querySelector(".side");
+  if(!lead || !facts || !side) return;
+  const dl = facts.querySelector("dl");
+  /* start again from the facts as written */
+  lead.querySelector(".facts-more")?.remove();
+  dl.querySelectorAll(".moved").forEach(x => x.classList.remove("moved"));
+  facts.classList.remove("emptied");
+  if(facts.hidden || !matchMedia("(min-width: 761px)").matches) return;
+  const gap = () => contentH(side) - contentH(lead);
+  if(gap() <= GAP) return;
+  const kids = [...dl.children], pairs = [];
+  for(let i = 0; i + 1 < kids.length; i += 2) if(kids[i].tagName === "DT") pairs.push([kids[i], kids[i + 1]]);
+  const more = document.createElement("div");
+  more.className = "facts facts-more";
+  more.innerHTML = `<h2 class="label">Quick facts</h2><dl></dl>`;
+  lead.append(more);
+  const mdl = more.querySelector("dl");
+  let n = 0;
+  while(n < pairs.length && gap() > GAP){
+    const before = Math.abs(gap()), [dt, dd] = pairs[pairs.length - 1 - n];
+    const copies = [dt.cloneNode(true), dd.cloneNode(true)];
+    dt.classList.add("moved"); dd.classList.add("moved"); mdl.prepend(...copies);
+    if(n === pairs.length - 1) facts.classList.add("emptied");
+    /* a row that overshoots, leaving a bigger hole on the other side, goes back */
+    if(Math.abs(gap()) > before){ copies.forEach(c => c.remove()); dt.classList.remove("moved"); dd.classList.remove("moved"); facts.classList.remove("emptied"); break; }
+    n++;
+  }
+  if(!n) more.remove();
+  else more.classList.toggle("whole", facts.classList.contains("emptied"));
+};
+/* the summary, the picture and the facts all arrive at different moments, so check whenever the page changes size */
+new ResizeObserver(() => { cancelAnimationFrame(balancing); balancing = requestAnimationFrame(balanceHero); }).observe(document.documentElement);
+
 window.Myriad = {ROOT, WINGS, ALL_WINGS, TELESCOPE, wingsFor, takeover, topicIn, esc};
 }
