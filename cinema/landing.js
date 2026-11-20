@@ -71,6 +71,8 @@ const strip_ = async (el, films) => {
 const box = document.createElement("div");
 box.id = "discover";
 box.innerHTML = `
+  <section class="cine-hero" id="d-hero" hidden></section>
+  <section class="section cine-wall" id="d-wall" hidden><h2 class="label">The wall</h2><p class="sub">A different spread every day — open any one</p><div class="wall" id="d-wall-films"></div></section>
   <section class="section" id="d-today" hidden><h2 class="label">Tonight's double feature</h2><p class="sub" id="d-today-sub"></p><div class="body"></div></section>
   <section class="section" id="d-drift"><h2 class="label">Drift</h2><p class="sub">Pull a thread — from a film to the people who made it, and on to what else they made</p><div class="body"><p class="status">Getting ready…</p></div></section>
   <section class="section" id="d-day" hidden><h2 class="label">On this day</h2><p class="sub" id="d-day-sub"></p><div class="body"></div></section>
@@ -170,6 +172,47 @@ async function about(pair){
   } catch(e){ pair.info = {}; }
 }
 
+/* ---------- Now showing: one film, big, against its own poster ---------- */
+async function nowShowing(j, r){
+  const sec = $("d-hero");
+  for(let tries = 0; tries < 5; tries++){
+    const f = await wellKnown(j, r);
+    if(!f?.enwiki) continue;
+    await C.posters([f.enwiki]);
+    const src = C.posterCache[f.enwiki];
+    if(!src) continue;
+    const d = await C.getJSON("https://en.wikipedia.org/w/api.php?format=json&origin=*&action=query&prop=description&redirects=1&titles=" + encodeURIComponent(f.enwiki)).catch(() => null);
+    const desc = Object.values(d?.query?.pages || {})[0]?.description || (f.year ? String(f.year) : "");
+    sec.innerHTML = `<div class="ch-frame"><div class="ch-bg" style="background-image:url('${esc(src)}')"></div>
+      <a class="ch-poster" href="${esc(here(f.enwiki))}"><img src="${esc(src)}" alt=""></a>
+      <div class="ch-text"><p class="ch-kicker">${shownHero ? "Also showing" : "Now showing"}</p>
+        <h2 class="ch-title"><a href="${esc(here(f.enwiki))}">${esc(f.name)}</a></h2>
+        ${desc ? `<p class="ch-desc">${esc(desc[0].toUpperCase() + desc.slice(1))}</p>` : ""}
+        <p class="ch-ctl"><a class="ch-open" href="${esc(here(f.enwiki))}">Open the film</a>${f.archive ? `<a class="ch-open" href="${esc(here(f.enwiki))}">▶ Watch free</a>` : ""}
+          <button type="button" class="ghost" id="ch-next">Something else</button></p></div></div>`;
+    sec.hidden = false; shownHero++;
+    $("ch-next").onclick = () => nowShowing(j, Math.random);
+    return;
+  }
+}
+let shownHero = 0;
+
+/* ---------- The wall: a day's spread of well-known films ---------- */
+async function theWall(j){
+  const r = D.rng("cinema-wall-" + D.today());
+  let films;
+  if(j) films = j.films.filter(f => f.enwiki && f.wikipedias >= 40);
+  else films = CANON.map(t => ({enwiki: t, name: strip(t), year: "", archive: ""}));
+  const pool = [...films], pick = [];
+  while(pick.length < 24 && pool.length) pick.push(pool.splice(Math.floor(r() * pool.length), 1)[0]);
+  await C.posters(pick.map(f => f.enwiki));
+  const shown = pick.filter(f => C.posterCache[f.enwiki]).slice(0, 18);
+  if(shown.length < 6) return;
+  $("d-wall-films").innerHTML = shown.map(card).join("");
+  $("d-wall-films").querySelectorAll(".poster").forEach((a, i) => a.dataset.name = shown[i].name + (shown[i].year ? ` (${shown[i].year})` : ""));
+  $("d-wall").hidden = false;
+}
+
 /* ---------- On this day ---------- */
 function onThisDay(j){
   const md = D.monthDay();
@@ -227,6 +270,8 @@ let walker = null;
   showTrail();
   const j = await data();   /* may be null: then the canon stands in, and the sections that need the file stay hidden */
   $("d-shuffle").onclick = async () => { const f = await wellKnown(j); if(f) location.href = here(f.enwiki); };
+  nowShowing(j, D.rng("cinema-hero-" + D.today()));
+  theWall(j);
   if(j){ onThisDay(j); door(j); }
 
   /* Drift starts from a film or person the reader asked for (?drift=Q…&k=film|person&name=Title), or from today's film */
