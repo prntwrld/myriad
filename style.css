@@ -13,6 +13,7 @@
   --soft:#e9eef5;
   --plank:#2b2f36;
   --shadow:rgba(20,23,28,.28);
+  --display:Cinzel,"Trajan Pro",serif;
   color-scheme:light;
 }
 @media (prefers-color-scheme: dark){
@@ -57,7 +58,8 @@ a:hover{color:var(--accent-2)}
 .theme{grid-column:2;grid-row:1;align-self:start}
 .chips{grid-column:1;margin-top:16px;font-size:16px;color:var(--muted)}
 .chips a{cursor:pointer}
-.chips a + a::before{content:"·";color:var(--muted);margin:0 10px;display:inline-block;text-decoration:none}
+.chips a{white-space:nowrap}
+.chips a:not(:last-child)::after{content:"·";color:var(--muted);margin:0 6px 0 10px;display:inline-block;text-decoration:none}
 
 .masthead::after{content:"";grid-column:1 / -1;border-bottom:3px double var(--rule);margin-top:28px}
 body.on .masthead::after{margin-top:16px}
@@ -87,7 +89,7 @@ main{padding-bottom:24px}
 
 /* ---------- home: the reading room ---------- */
 .room{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px 44px}
-.room h3{font:500 22px/1.2 "EB Garamond",serif;margin:18px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.room h3{font:500 22px/1.2 "EB Garamond",serif;margin:6px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line)}
 .room ul{list-style:none;margin:0;padding:0}
 .room li{margin:0 0 10px;font-size:17px;line-height:1.4}
 .room li a{font-weight:500}
@@ -377,9 +379,11 @@ body[data-wing] .masthead .logo{font-size:clamp(40px,7.5vw,76px)}
 .player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 
 /* images from Commons */
-.stills{columns:4 200px;column-gap:12px}
-.stills a{display:block;margin:0 0 12px;break-inside:avoid}
-.stills img{width:100%;display:block;border:1px solid var(--line)}
+/* a shelf of pictures you scroll sideways, like the posters, so no one picture swallows the page */
+.stills{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;scrollbar-width:thin}
+.stills a{flex:none;display:block}
+.stills img{height:220px;width:auto;max-width:420px;object-fit:cover;display:block;border:1px solid var(--line)}
+@media (max-width:760px){ .stills img{height:150px;max-width:260px} }
 .row.archive{--h:170px}
 .archive .obj img{max-height:calc(var(--h) - 12px)}
 
@@ -512,7 +516,7 @@ button.ghost:hover{background:transparent;border-color:var(--ink);color:var(--in
   & .tag::before{content:"✦ ";color:#ff5fb4}
   & .chips{font-size:15px}
   & .chips a{font-weight:bold}
-  & .chips a + a::before{content:"✧";color:#b76cf0}
+  & .chips a:not(:last-child)::after{content:"✧";color:#b76cf0}
   & .masthead::after{border-bottom:0;height:8px;border-radius:8px;background:var(--chrome);
     box-shadow:0 1px 0 #fff inset,0 2px 6px rgba(30,60,140,.25)}
 
@@ -671,4 +675,256 @@ button.ghost:hover{background:transparent;border-color:var(--ink);color:var(--in
   & .door-ctl select{border-radius:999px;border:2px solid #7fa3e0;font:15px var(--y-font);padding:8px 14px}
   & .trail a{border-radius:999px;border-color:#9db6e8;background:linear-gradient(#ffffff,#dbe8ff);font-size:14px}
   & .chips .shuffle{border-radius:999px}
+}
+
+
+/* =====================================================================
+   Discovery layer: pill buttons, rules striped in the wing's colour,
+   and the double feature and Drift. Not in Y2K.
+   ===================================================================== */
+body{--stripe-1:color-mix(in srgb,var(--accent) 35%,#e8913a);--stripe-2:var(--accent)}
+:root:not([data-theme="y2k"]){
+  /* the masthead and footer rules: two stripes in the room's colour, warming toward amber */
+  & .masthead::after,& footer::before{border:0;height:7px;
+    background:linear-gradient(var(--stripe-1) 0 2px,transparent 2px 4px,var(--stripe-2) 4px 7px)}
+  & .soon{grid-column:1;justify-self:start;margin-top:10px;font:600 11px/1 var(--display);letter-spacing:.2em;text-transform:uppercase;
+    color:var(--accent);border:1px solid currentColor;border-radius:999px;padding:6px 12px}
+  /* pill buttons that look pressable */
+  & button:not(.dn-opt):not(#f button):not(.tabs button){border-radius:999px;transition:transform .15s ease,background .15s ease,box-shadow .15s ease}
+  & button:not(.linkish):active{transform:translateY(1px)}
+  & button.ghost{border-color:var(--accent);color:var(--accent)}
+  & button.ghost:hover{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+}
+/* the front page has no room of its own, so its rules run through every wing's colour */
+:root:not([data-theme="y2k"]) body:not([data-wing]){
+  & .masthead::after,& footer::before{height:5px;
+    background:linear-gradient(90deg,var(--c-field-guide) 0 14.28%,var(--c-cinema) 0 28.57%,var(--c-metronome) 0 42.85%,var(--c-gallery) 0 57.14%,
+      var(--c-observatory) 0 71.42%,var(--c-academy) 0 85.71%,var(--c-arcade) 0)}
+}
+
+/* ---------- tonight's double feature: two modest posters, the person between them ---------- */
+.double{grid-template-columns:150px minmax(0,1fr) 150px;gap:36px;max-width:760px;align-items:center}
+.df-why{text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;isolation:isolate}
+.df-why::before{content:"";position:absolute;left:-36px;right:-36px;top:58px;border-top:1px dashed var(--accent);opacity:.5;z-index:-1}
+.df-face{display:grid;place-items:center;width:116px;height:116px;border-radius:50%;overflow:hidden;background:var(--soft);
+  border:3px solid var(--bg);box-shadow:0 0 0 2px var(--accent);text-decoration:none;font:500 28px/1 var(--display);color:var(--muted)}
+.df-face img{width:100%;height:100%;object-fit:cover;display:block;filter:sepia(.18) saturate(.95)}
+.df-why .df-role{margin:8px 0 0;font:600 10px/1.3 var(--display);letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+.df-why .df-story{margin:0;font-size:22px;line-height:1.3;text-wrap:balance}
+.df-why .df-story a{color:var(--ink);font-weight:600}
+.df-why .df-desc{margin:0;color:var(--muted);font-style:italic;font-size:16px;text-wrap:balance}
+.df-drift{margin-top:10px;min-height:38px;padding:0 18px;font-size:12px}
+@media (max-width:760px){
+  .double{grid-template-columns:repeat(2,minmax(0,130px));justify-content:center;gap:18px 24px}
+  .df-why{grid-column:1 / -1;grid-row:1}
+  .df-why::before{display:none}
+  .df-face{width:88px;height:88px}
+}
+
+/* ---------- Drift: the path, the current stop, and threads to pull ---------- */
+.drift-track{list-style:none;margin:0 0 20px;padding:4px 2px 10px;display:flex;align-items:center;overflow-x:auto;scrollbar-width:thin}
+.dt-step{display:flex;align-items:center;flex:none}
+.dt-why{font:italic 14px/1.2 "EB Garamond",serif;color:var(--muted);padding:0 4px;white-space:nowrap}
+.dt-why::before,.dt-why::after{content:"";display:inline-block;width:16px;border-top:1.5px solid var(--accent);vertical-align:middle;margin:0 6px;opacity:.6}
+button.dt-node{display:flex;align-items:center;gap:8px;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:999px;
+  min-height:0;padding:3px 12px 3px 3px;font:400 15px/1.2 "EB Garamond",serif;letter-spacing:0;text-transform:none;cursor:pointer}
+button.dt-node:hover{background:var(--soft);border-color:var(--accent);color:var(--ink)}
+.dt-step.now button.dt-node{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);font-weight:600;cursor:default}
+.dt-img{width:30px;height:30px;border-radius:50%;overflow:hidden;background:var(--soft);display:grid;place-items:center;flex:none}
+.dt-img img{width:100%;height:100%;object-fit:cover}
+.dt-img .dc-ini{font-size:11px}
+.dt-name{max-width:16ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.drift-card{grid-template-columns:132px minmax(0,1fr);border-radius:14px;max-width:none}
+.dc-img{border-radius:6px}
+.dc-img.round{border-radius:50%;aspect-ratio:1}
+.dc-ini{font:500 28px/1 var(--display)}
+.dc-why{font-family:var(--display);font-weight:500}
+.dc-open{margin:12px 0 0;font-size:16px}
+.dc-open a::after{content:" →"}
+
+.drift-next{margin-top:26px}
+.dn-head{margin:0 0 12px;font:500 13px/1.2 var(--display);letter-spacing:.24em;text-transform:uppercase;color:var(--ink)}
+.dn-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+button.dn-opt,.dn-opt{display:grid;grid-template-columns:64px minmax(0,1fr) auto;grid-template-rows:auto auto 1fr;column-gap:14px;align-items:start;text-align:left;
+  background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:12px;min-height:0;
+  font:400 17px/1.25 "EB Garamond",serif;letter-spacing:0;text-transform:none;cursor:pointer;box-shadow:0 1px 0 var(--line)}
+button.dn-opt:hover,button.dn-opt:focus-visible{background:var(--paper);color:var(--ink);border-color:var(--accent);transform:translateY(-3px);
+  box-shadow:0 10px 22px -14px var(--shadow),0 0 0 1px var(--accent)}
+.dn-img{grid-row:1 / span 3;width:64px;aspect-ratio:2/3;border-radius:5px;overflow:hidden;background:var(--soft);display:grid;place-items:center}
+.dn-img.round{aspect-ratio:1;border-radius:50%;align-self:center}
+.dn-img img{width:100%;height:100%;object-fit:cover;display:block}
+.dn-img .dc-ini{font-size:18px}
+.dn-why{grid-column:2;font:500 10.5px/1.3 var(--display);letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-top:2px}
+.dn-name{grid-column:2;font-weight:600;font-size:18px;margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.dn-sub{grid-column:2;color:var(--muted);font-size:15px}
+.dn-go{grid-column:3;grid-row:1 / span 3;align-self:center;font:400 22px/1 var(--display);color:var(--accent);transition:transform .15s ease}
+button.dn-opt:hover .dn-go{transform:translateX(3px)}
+.ghost-opt{cursor:default;box-shadow:none}
+.ghost-opt .dn-img,.ghost-opt .dn-why,.ghost-opt .dn-name{background:var(--soft);border-radius:4px;animation:shimmer 1.2s ease-in-out infinite alternate}
+.ghost-opt .dn-name{width:70%}
+@keyframes shimmer{from{opacity:.55}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.ghost-opt *{animation:none}}
+.drift-ctl{margin-top:18px}
+@media (max-width:760px){
+  .dn-grid{grid-template-columns:1fr}
+  .drift-card{grid-template-columns:90px minmax(0,1fr)}
+}
+
+/* on a wide screen the current stop sits beside the threads you can pull from it */
+@media (min-width:900px){
+  .drift-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:28px;align-items:start}
+  .drift-body .drift-card{grid-template-columns:110px minmax(0,1fr)}
+  .drift-body .drift-next{margin-top:0}
+  .drift-body .dn-grid{grid-template-columns:1fr;gap:10px}
+  .double{margin:0 auto}
+}
+
+
+/* ---------- the front page as a gallery ---------- */
+/* the picture of the day: one wide, letterboxed frame with a museum placard under it */
+.today-pic{margin:40px 0 56px;text-align:center}
+.tp-frame{display:block;aspect-ratio:2.39/1;overflow:hidden;background:var(--plank);box-shadow:0 18px 40px -28px var(--shadow)}
+.tp-frame img{width:100%;height:100%;object-fit:cover;display:block;transition:transform 1.2s ease}
+.tp-frame:hover img{transform:scale(1.02)}
+@media (prefers-reduced-motion:reduce){.tp-frame img{transition:none}}
+.tp-placard{max-width:620px;margin:22px auto 0}
+.tp-kicker{margin:0;font:600 11px/1.2 var(--display);letter-spacing:.24em;text-transform:uppercase;color:var(--muted)}
+.tp-kicker span{color:var(--c)}
+.tp-kicker i{display:inline-block;width:6px;height:6px;background:var(--c);transform:rotate(45deg);margin:0 6px 1px 2px}
+.tp-title{margin:10px 0 0;font:600 clamp(28px,4.2vw,44px)/1.1 var(--display);letter-spacing:.08em}
+.tp-title a{color:var(--ink);text-decoration:none}
+.tp-title a:hover{color:var(--accent)}
+.tp-desc{margin:8px 0 0;color:var(--muted);font-style:italic;font-size:18px;text-wrap:balance}
+.tp-ctl{margin:14px 0 0;display:flex;justify-content:center;gap:22px;align-items:center;font-size:16px}
+.tp-open::after{content:" →"}
+.tp-ctl .linkish{font:inherit;letter-spacing:0;text-transform:none;color:var(--muted);background:none;border:0;min-height:0;padding:0;cursor:pointer;
+  text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.tp-ctl .linkish:hover{color:var(--ink);background:none}
+@media (max-width:760px){
+  .today-pic{margin:28px 0 40px}
+  .tp-frame{aspect-ratio:16/10;margin:0 -24px}
+}
+
+/* a picture on every wing card: wide subjects cropped, posters and covers as a strip of three */
+.wc-pic{display:block;margin:0 0 14px;overflow:hidden;background:var(--line)}
+.wc-pic.wide{position:relative;aspect-ratio:16/9}
+.wc-pic.wide img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .8s ease}
+.wc-pic.wide:hover img{transform:scale(1.03)}
+.wc-cap{position:absolute;left:0;bottom:0;padding:5px 9px;background:var(--bg);color:var(--muted);font-size:13px;font-style:italic}
+.wc-pic.strip{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:none;aspect-ratio:16/9}
+.wc-pic.strip a{display:block;overflow:hidden;background:var(--line)}
+.wc-pic.strip img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .8s ease}
+.wc-pic.strip a:hover img{transform:scale(1.04)}
+.wing-card{padding-top:18px}
+/* in Y2K the cards are glass panels; round the pictures to match */
+:root[data-theme="y2k"] .wc-pic,:root[data-theme="y2k"] .tp-frame{border-radius:10px}
+
+
+/* ---------- Cinema: now showing ---------- */
+/* a letterboxed frame: the poster's own colours blurred into a backdrop, the poster itself, and the film's name */
+.cine-hero{margin:36px 0 48px}
+.ch-frame{position:relative;aspect-ratio:2.39/1;overflow:hidden;background:#0d0f12;color:#f3efe6;display:grid;
+  grid-template-columns:auto minmax(0,1fr);align-items:center;gap:clamp(18px,4vw,48px);padding:0 clamp(18px,5vw,64px);
+  box-shadow:0 22px 44px -30px var(--shadow)}
+.ch-bg{position:absolute;inset:-40px;background-size:cover;background-position:center;filter:blur(36px) saturate(1.2) brightness(.55);transform:scale(1.1)}
+.ch-frame::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,12,15,.15),rgba(10,12,15,.55));pointer-events:none}
+.ch-poster{position:relative;z-index:1;display:block;height:78%;max-height:340px;aspect-ratio:2/3;box-shadow:0 18px 36px -10px rgba(0,0,0,.7);
+  transition:transform .4s ease}
+.ch-poster:hover{transform:translateY(-4px)}
+.ch-poster img{width:100%;height:100%;object-fit:cover;display:block}
+.ch-text{position:relative;z-index:2;max-width:520px}
+.ch-kicker{margin:0;font:600 11px/1.2 var(--display);letter-spacing:.28em;text-transform:uppercase;color:rgba(243,239,230,.7)}
+.ch-title{margin:12px 0 0;font:600 clamp(28px,4.4vw,52px)/1.05 var(--display);letter-spacing:.06em;text-wrap:balance}
+.ch-title a{color:#f6f2ea;text-decoration:none}
+.ch-desc{margin:10px 0 0;font-style:italic;font-size:19px;color:rgba(243,239,230,.8)}
+.ch-ctl{margin:20px 0 0;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.ch-ctl a.ch-open{display:inline-flex;align-items:center;min-height:42px;padding:0 20px;border-radius:999px;background:#f3efe6;color:#14171c;
+  text-decoration:none;font:600 12px/1 var(--display);letter-spacing:.18em;text-transform:uppercase}
+.ch-ctl a.ch-open:hover{background:#fff;color:#14171c}
+.cine-hero .ch-ctl button.ghost{min-height:42px;background:transparent;border:1px solid rgba(243,239,230,.5);color:#f3efe6}
+.cine-hero .ch-ctl button.ghost:hover{background:rgba(243,239,230,.12);border-color:#f3efe6;color:#fff}
+@media (max-width:760px){
+  .ch-frame{aspect-ratio:auto;grid-template-columns:110px minmax(0,1fr);padding:26px 20px;margin:0 -24px;align-items:end}
+  .ch-poster{height:auto;width:110px}
+  .ch-desc{font-size:16px}
+}
+
+/* the wall: a dense spread of posters to wander into */
+.cine-wall .wall{grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:18px 14px}
+.cine-wall .poster .cap{display:none}
+.cine-wall .poster .frame{box-shadow:0 1px 0 rgba(0,0,0,.12),0 10px 18px -12px var(--shadow)}
+.cine-wall .poster:hover .frame{transform:translateY(-5px) scale(1.02)}
+.cine-wall .poster{position:relative}
+.cine-wall .poster::after{content:attr(data-name);position:absolute;left:0;right:0;bottom:0;padding:22px 8px 7px;color:#fff;font-size:14px;line-height:1.2;
+  background:linear-gradient(transparent,rgba(0,0,0,.78));opacity:0;transition:opacity .2s ease;pointer-events:none}
+.cine-wall .poster:hover::after,.cine-wall .poster:focus-visible::after{opacity:1}
+@media (max-width:760px){ .cine-wall .wall{grid-template-columns:repeat(3,1fr);gap:10px} }
+
+:root:not([data-theme="y2k"]) .cine-hero .ch-ctl button.ghost{border-color:rgba(243,239,230,.5);color:#f3efe6}
+:root:not([data-theme="y2k"]) .cine-hero .ch-ctl button.ghost:hover{background:rgba(243,239,230,.12);border-color:#f3efe6;color:#fff}
+
+/* ---------- recognition: awards under a topic's summary ---------- */
+.honors{margin:18px 0 0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 14px;align-items:start;font-size:15.5px}
+.honors b{font:600 11px/1 var(--display);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);padding-top:9px}
+.h-list{margin:0;display:flex;flex-wrap:wrap;gap:6px 8px;align-items:baseline}
+@media (max-width:560px){ .honors{grid-template-columns:1fr} .honors b{padding-top:0} }
+.honors span{padding:3px 10px;border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));background:var(--paper);color:var(--ink)}
+.honors span i{font-style:normal;color:var(--muted);font-variant-numeric:lining-nums;margin-left:3px}
+.honors .more-h{border:0;background:none;color:var(--muted);font-style:italic;padding:3px 0}
+
+/* ---------- before & after: what a film came from, the film, what it led to ---------- */
+.before-after{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:28px;align-items:start}
+.ba-col .minor{margin-top:0}
+.ba-list{display:flex;flex-wrap:wrap;gap:14px}
+.ba-item{width:104px}
+.ba-item .poster{display:block}
+.ba-how{display:block;margin-top:2px;font:600 9.5px/1.3 var(--display);letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+.ba-col:first-child .ba-list{justify-content:flex-end}
+.ba-col:first-child .minor{text-align:right}
+.ba-col:first-child .minor::after{display:none}
+.ba-this{display:flex;align-items:center;gap:12px;padding-top:34px}
+.ba-this .poster{width:150px;display:block}
+.ba-this .poster .frame{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent),0 14px 26px -14px var(--shadow)}
+.ba-arrow{font:400 26px/1 var(--display);color:var(--accent)}
+@media (max-width:760px){
+  .before-after{grid-template-columns:1fr;gap:18px}
+  .ba-col:first-child .ba-list{justify-content:flex-start}
+  .ba-col:first-child .minor{text-align:left}
+  .ba-this{padding:0;justify-content:center}
+  .ba-this .ba-arrow{transform:rotate(90deg)}
+}
+
+/* ---------- your collection: a little card for everything you've opened ---------- */
+.trail{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:14px 12px}
+.trail li{min-width:0}
+.trail a{display:block;padding:0;border:0;background:none;font-size:14px;line-height:1.25}
+.trail a:hover{color:var(--c, var(--accent))}
+.tr-img{display:grid;place-items:center;aspect-ratio:3/4;overflow:hidden;background:var(--soft);border:1px solid var(--line);margin-bottom:6px;
+  transition:transform .2s ease,box-shadow .2s ease}
+.trail a:hover .tr-img{transform:translateY(-3px);box-shadow:0 10px 18px -12px var(--shadow);border-color:var(--c, var(--accent))}
+.tr-img img{width:100%;height:100%;object-fit:cover;display:block}
+.tr-img b{font:600 20px/1 var(--display);color:var(--muted)}
+.tr-name{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.trail .tr-name i{margin:0 6px 0 1px}
+:root[data-theme="y2k"] .trail a{border-radius:0;background:none;border:0}
+
+/* ---------- narrow windows ---------- */
+/* Now showing keeps enough height for its poster when the window is half-width on a computer */
+.ch-frame{min-height:300px}
+.ch-poster{min-height:220px}
+@media (max-width:1000px) and (min-width:761px){
+  .ch-frame{aspect-ratio:auto;padding-top:32px;padding-bottom:32px}
+  .ch-poster{height:260px}
+}
+/* a film's poster at the top shouldn't fill a phone screen */
+@media (max-width:760px){
+  .plate.is-poster{max-width:300px;margin:0 auto}
+  .drift-ctl button{min-height:38px;padding:0 16px;font-size:11px}
+}
+/* between phone and full width, the nav centres on two tidy lines instead of leaving one wing stranded */
+@media (max-width:1060px) and (min-width:761px){
+  .wings{justify-content:center;gap:6px 18px}
+  .wings .w-home{flex-basis:100%;text-align:center;margin:0 0 2px}
+  .wings .w-out{margin-left:0}
 }

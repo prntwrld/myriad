@@ -93,6 +93,26 @@ const lineage = id => sparql(`SELECT ?x ?xLabel ?rel (SAMPLE(?img) AS ?pic) (SAM
   SERVICE wikibase:label { bd:serviceParam wikibase:language "${LANGS}". }
 } GROUP BY ?x ?xLabel ?rel ORDER BY DESC(?pop) LIMIT 60`);
 
+/* a film's before and after: what it came from (the book it adapts, the film it follows or answers)
+   and what it led to (remakes, adaptations, sequels, films it influenced) */
+const filmLineage = id => sparql(`SELECT ?x ?xLabel ?rel ?how (MIN(YEAR(?d)) AS ?y) (SAMPLE(?art) AS ?a) (MAX(?sl) AS ?pop) WHERE {
+  { wd:${id} wdt:P144 ?x . BIND("from" AS ?rel) BIND("source" AS ?how) } UNION { wd:${id} wdt:P155 ?x . BIND("from" AS ?rel) BIND("before it" AS ?how) }
+  UNION { wd:${id} wdt:P737 ?x . BIND("from" AS ?rel) BIND("influence" AS ?how) }
+  UNION { ?x wdt:P144 wd:${id} . BIND("to" AS ?rel) BIND("based on it" AS ?how) } UNION { wd:${id} wdt:P4969 ?x . BIND("to" AS ?rel) BIND("based on it" AS ?how) }
+  UNION { wd:${id} wdt:P156 ?x . BIND("to" AS ?rel) BIND("after it" AS ?how) } UNION { ?x wdt:P737 wd:${id} . BIND("to" AS ?rel) BIND("influenced" AS ?how) }
+  OPTIONAL { ?x wdt:P577 ?d } OPTIONAL { ?art schema:about ?x ; schema:isPartOf <https://en.wikipedia.org/> }
+  ?x wikibase:sitelinks ?sl .
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "${LANGS}". }
+} GROUP BY ?x ?xLabel ?rel ?how ORDER BY DESC(?pop) LIMIT 40`);
+
+/* the best-known films first released in a given year */
+const ofYear = (year, not) => sparql(`SELECT ?film ?filmLabel (MIN(YEAR(?d)) AS ?y) (SAMPLE(?art) AS ?a) (MAX(?sl) AS ?pop) WHERE {
+  ?film wdt:P31 wd:Q11424 ; wdt:P577 ?d ; wikibase:sitelinks ?sl . FILTER(?sl >= 25)
+  FILTER(?d >= "${year}-01-01T00:00:00Z"^^xsd:dateTime && ?d < "${+year + 1}-01-01T00:00:00Z"^^xsd:dateTime) FILTER(?film != wd:${not})
+  ?art schema:about ?film ; schema:isPartOf <https://en.wikipedia.org/> .
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "${LANGS}". }
+} GROUP BY ?film ?filmLabel ORDER BY DESC(?pop) LIMIT 14`);
+
 /* names, portraits and articles for a list of Wikidata items (a film's cast and crew) */
 const describe = ids => ids.length ? sparql(`SELECT ?x ?xLabel (SAMPLE(?img) AS ?pic) (SAMPLE(?art) AS ?a) WHERE {
   VALUES ?x { ${ids.map(i => "wd:" + i).join(" ")} }
@@ -120,6 +140,15 @@ const collection = id => sparql(`SELECT ?film ?filmLabel (MIN(YEAR(?d)) AS ?y) (
   ?film wikibase:sitelinks ?sl . SERVICE wikibase:label { bd:serviceParam wikibase:language "${LANGS}". }
 } GROUP BY ?film ?filmLabel ORDER BY DESC(?pop) LIMIT 90`);
 
+/* Is an Internet Archive copy still there, with a video in it? Wikidata keeps links to items the Archive has
+   since taken down, so ask the Archive before showing a player or calling a film free to watch. */
+const iaCache = {};
+const iaPlayable = id => iaCache[id] ||= fetch("https://archive.org/metadata/" + encodeURIComponent(id), {signal: AbortSignal.timeout(10000)})
+  .then(r => r.ok ? r.json() : null)
+  /* if the Archive can't be asked, assume it's there; hide it only when the Archive says it's gone or has no video */
+  .then(j => j === null ? true : !!j.metadata && !j.is_dark && (j.files || []).some(f => /mpeg4|h\.264|ogg video|matroska|webm/i.test(f.format || "") || /\.(mp4|ogv|webm|mkv)$/i.test(f.name || "")))
+  .catch(() => true);
+
 /* ---------- Wikidata claims ---------- */
 const claimIds = (e, p) => (e.claims?.[p] || []).filter(c => c.rank !== "deprecated").map(c => c.mainsnak?.datavalue?.value?.id).filter(Boolean);
 const claimStr = (e, p) => e.claims?.[p]?.[0]?.mainsnak?.datavalue?.value;
@@ -129,6 +158,19 @@ const claimTime = (e, p) => {
   const y = +m[2] * (m[1] === "-" ? -1 : 1);
   if(v.precision >= 11 && +m[3] && +m[4]) return new Date(Date.UTC(y, +m[3]-1, +m[4])).toLocaleDateString("en-US", {year:"numeric", month:"long", day:"numeric", timeZone:"UTC"});
   return String(y);
+};
+/* awards won, oldest first: [{id, year}] */
+const awards = e => (e.claims?.P166 || []).filter(c => c.rank !== "deprecated" && c.mainsnak?.datavalue).map(c => {
+  const t = c.qualifiers?.P585?.[0]?.datavalue?.value?.time; return {id: c.mainsnak.datavalue.value.id, year: t ? +t.slice(1, 5) : 0};
+}).sort((a, b) => (a.year || 9999) - (b.year || 9999));
+/* the recognition line under a title: the first few awards by name and year */
+const honors = (list, info, n = 4) => {
+  /* the big ones first (Oscars, the three great festivals, BAFTA…), then the rest by year */
+  const BIG = /Academy|Oscar|Palme d|Golden Lion|Golden Bear|Grand Prix|BAFTA|Golden Globe|César|Silver Lion|Silver Bear|Kennedy Center|Lifetime Achievement/i;
+  const named = list.filter(a => info[a.id]?.name).sort((a, b) => (BIG.test(info[b.id].name) - BIG.test(info[a.id].name)) || ((a.year || 9999) - (b.year || 9999)));
+  if(!named.length) return "";
+  return `<div class="honors"><b>Recognition</b><p class="h-list">${named.slice(0, n).map(a => `<span>${esc(info[a.id].name)}${a.year ? ` <i>${a.year}</i>` : ""}</span>`).join("")}${
+    named.length > n ? `<span class="more-h">and ${named.length - n} more</span>` : ""}</p></div>`;
 };
 const isHuman = e => claimIds(e, "P31").includes("Q5");
 const isFilm = e => !!e.claims?.P57 || claimIds(e, "P31").some(q => ["Q11424","Q24869","Q202866","Q93204","Q24862","Q226730","Q506240"].includes(q));
@@ -257,7 +299,8 @@ async function openTopic(title, others=[], query=""){
   const ctx = {my, id: s.wikibase_item, name, e, pic: claimStr(e, "P18") ? "http://commons.wikimedia.org/wiki/Special:FilePath/" + encodeURIComponent(claimStr(e, "P18")) : ""};
   /* remember it on the reader's trail, and offer to drift onward from here */
   const kind = isFilm(e) ? "film" : isHuman(e) ? "person" : "";
-  Myriad.discover?.trail.add({wing: "cinema", title: name, name: name.replace(/ \((\d{4} )?(\w+ )?film\)$/, "")});
+  const trailName = name.replace(/ \((\d{4} )?(\w+ )?film\)$/, "");
+  Myriad.discover?.trail.add({wing: "cinema", title: name, name: trailName, img: ctx.pic ? commons(ctx.pic, 160) : (thumb || "")});
   if(kind) $("readon").insertAdjacentHTML("beforeend", `<a class="drift-here" href="./?drift=${s.wikibase_item}&k=${kind}&name=${encodeURIComponent(name)}${
     kind === "person" && ctx.pic ? "&img=" + encodeURIComponent(commons(ctx.pic, 300)) : ""}">Drift from here</a>`);
   if(isFilm(e)){ $("plate").classList.add("is-poster"); return filmPage(ctx); }
@@ -299,14 +342,16 @@ async function personPage(ctx){
   const {e, id, name} = ctx;
   $("views").innerHTML = section("s-career", "Career", "Films a year — point at a bar to see which")
     + section("s-films", "Filmography", "Every film, in order — from Wikidata, with posters from Wikipedia")
+    + section("s-lineage", "Before & after", "Who they learned from, the movement they belong to, and who learned from them")
     + section("s-collab", "Collaborators", "The people they made the most films with")
     + section("s-watch", "Where to watch", "Streaming and libraries — and any films free to watch in full")
-    + section("s-lineage", "Movements & influence", "Where they came from, and where it went")
     + section("s-stills", "Images", "From Wikimedia Commons");
 
   const birth = claimTime(e, "P569"), death = claimTime(e, "P570");
-  describe([...claimIds(e, "P19"), ...claimIds(e, "P106").slice(0, 4), ...claimIds(e, "P135"), ...claimIds(e, "P26").slice(0, 3)]).then(info => {
+  const won = awards(e);
+  describe([...claimIds(e, "P19"), ...claimIds(e, "P106").slice(0, 4), ...claimIds(e, "P135"), ...claimIds(e, "P26").slice(0, 3), ...won.slice(0, 30).map(a => a.id)]).then(info => {
     if(!alive(ctx)) return;
+    $("readon")?.closest(".readon")?.insertAdjacentHTML("beforebegin", honors(won, info));
     const names = (p, n=4) => claimIds(e, p).slice(0, n).map(i => info[i]?.name).filter(Boolean).join(", ");
     setFacts([["Born", esc([birth, names("P19", 1)].filter(Boolean).join(", "))], ["Died", esc(death)],
       ["Work", esc(names("P106"))], ["Movement", peopleLinks(claimIds(e, "P135"), info)], ["Spouse", peopleLinks(claimIds(e, "P26"), info, 3)]]);
@@ -321,7 +366,9 @@ async function personPage(ctx){
     const first = counts.slice().sort((a, b) => b[1] - a[1])[0][0];
     const start = counts.find(([r]) => r === "dir") && counts.find(([r]) => r === "dir")[1] >= 3 ? "dir" : first;
     /* free films: the Internet Archive copies Wikidata links to their films — these play on the film's page */
-    const free = films.filter(f => f.ia && f.title).sort((a, b) => a.year - b.year);
+    const listed = films.filter(f => f.ia && f.title).sort((a, b) => a.year - b.year).slice(0, 24);
+    const okay = await Promise.all(listed.map(f => iaPlayable(f.ia)));
+    const free = listed.filter((f, i) => okay[i]);
     if(free.length){
       await posters(free.map(f => f.title));
       if(alive(ctx)) $("free").innerHTML = `<h3 class="minor">Free to watch in full — ${free.length} ${free.length === 1 ? "film plays" : "films play"} on ${free.length === 1 ? "its" : "their"} page, from the Internet Archive</h3><div class="wall strip">${free.map(poster).join("")}</div>`;
@@ -333,10 +380,13 @@ async function personPage(ctx){
       $("s-career").querySelector(".body").innerHTML = tabs + career(list);
       $("s-career").querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-pressed", b.dataset.role === role));
       /* the wall shows the films with an English article first; the rest (shorts, fragments, lost films) on request */
+      /* a long career (a composer with 500 scores) shows its best-known 40, in order, with the rest on request */
       const known = list.filter(f => f.title), rest = list.length - known.length;
-      const shown = everything || known.length < 6 ? list : known;
-      const more = rest && known.length >= 6 ? `<p class="wall-more"><button type="button" class="linkish" data-all>${everything
-        ? `Show only the ${known.length} best-documented films` : `Show all ${list.length}, including ${rest} ${rest === 1 ? "lesser-known work" : "shorts, fragments and lesser-known works"}`}</button></p>` : "";
+      const best = known.length > 48 ? known.slice().sort((a, b) => b.pop - a.pop).slice(0, 40).sort((a, b) => a.year - b.year) : known;
+      const shown = everything || known.length < 6 ? list : best;
+      const more = shown.length < list.length || everything ? `<p class="wall-more"><button type="button" class="linkish" data-all>${everything
+        ? `Show only the best known` : best.length < known.length ? `These are the ${best.length} best known — show all ${list.length}`
+        : `Show all ${list.length}, including ${rest} ${rest === 1 ? "lesser-known work" : "shorts, fragments and lesser-known works"}`}</button></p>` : "";
       show("s-films", wall(shown) + more);
       await posters(shown.map(f => f.title));
       if(alive(ctx) && $("s-career").querySelector(`[data-role="${role}"][aria-pressed="true"]`)) show("s-films", wall(shown) + more);
@@ -378,22 +428,33 @@ async function filmPage(ctx){
   const year = claimTime(e, "P577").slice(-4);
   const dirs = claimIds(e, "P57");
   const ia = claimStr(e, "P724");
+  /* the poster at the top: Wikipedia's summary leaves out fair-use posters, so ask for the lead image directly */
+  if($("plate").hidden){
+    posters([name]).then(() => {
+      const src = posterCache[name]; if(!alive(ctx) || !src) return;
+      $("pic").src = src.replace(/\/\d+px-/, "/500px-"); $("plate").hidden = false;
+      Myriad.discover?.trail.add({wing: "cinema", title: name, name: name.replace(/ \((\d{4} )?(\w+ )?film\)$/, ""), img: src});
+    });
+  }
   $("views").innerHTML = (ia ? section("s-play", "Watch it here", "Free and in full, from the Internet Archive") : "")
+    + section("s-line", "Before & after", "What it came from, and what came of it")
     + section("s-watch", "Where to watch", "Streaming, libraries, and the film's pages elsewhere")
     + section("s-cast", "Cast", "In order of billing")
     + section("s-crew", "Crew", "")
     + section("s-more", "More by the director", "Their best-known films")
     + section("s-mov", "From the same movement", "")
+    + (year ? section("s-year", `Also in ${year}`, "The year's best-known films") : "")
     + section("s-stills", "Images", "From Wikimedia Commons");
 
-  if(ia) show("s-play", `<div class="player"><iframe src="https://archive.org/embed/${encodeURIComponent(ia)}" title="${esc(name)}" allowfullscreen loading="lazy"></iframe></div>
-    <p class="chart-note"><a href="https://archive.org/details/${encodeURIComponent(ia)}" ${ext}>Open on the Internet Archive</a></p>`);
+  if(ia) iaPlayable(ia).then(ok => { if(ok && alive(ctx)) show("s-play", `<div class="player"><iframe src="https://archive.org/embed/${encodeURIComponent(ia)}" title="${esc(name)}" allowfullscreen loading="lazy"></iframe></div>
+    <p class="chart-note"><a href="https://archive.org/details/${encodeURIComponent(ia)}" ${ext}>Open on the Internet Archive</a></p>`); });
   const q = name.replace(/ \((\d{4} )?film\)$/, "");
   show("s-watch", linkRow("Stream & rent", streamLinks(q)) + linkRow("Look up", dbLinks(e)));
 
   const cast = claimIds(e, "P161"), crew = {dir: dirs, wri: claimIds(e, "P58"), dop: claimIds(e, "P344"), mus: claimIds(e, "P86"), edi: claimIds(e, "P1040"), pro: claimIds(e, "P162").slice(0, 4)};
   const other = [...claimIds(e, "P495"), ...claimIds(e, "P364"), ...claimIds(e, "P136").slice(0, 3), ...claimIds(e, "P135"), ...claimIds(e, "P144").slice(0, 2)];
-  const all = [...new Set([...cast.slice(0, 24), ...Object.values(crew).flat(), ...other])];
+  const won = awards(e);
+  const all = [...new Set([...cast.slice(0, 24), ...Object.values(crew).flat(), ...other, ...won.slice(0, 30).map(a => a.id)])];
   describe(all).then(info => {
     if(!alive(ctx)) return;
     const names = (p, n=3) => claimIds(e, p).slice(0, n).map(i => info[i]?.name).filter(Boolean).join(", ");
@@ -402,9 +463,13 @@ async function filmPage(ctx){
       ["Cinematography", peopleLinks(crew.dop, info, 2)], ["Music", peopleLinks(crew.mus, info, 2)],
       ["Running time", rt ? esc(Math.round(+rt.amount) + " minutes") : ""], ["Country", esc(names("P495"))], ["Language", esc(names("P364"))],
       ["Genre", esc(names("P136"))], ["Movement", peopleLinks(claimIds(e, "P135"), info)], ["Based on", peopleLinks(claimIds(e, "P144"), info, 2)]]);
+    $("readon")?.closest(".readon")?.insertAdjacentHTML("beforebegin", honors(won, info));
     const people = ids => ids.map(i => info[i] && {id: i, ...info[i]}).filter(p => p?.name);
     if(cast.length) show("s-cast", `<div class="faces">${people(cast.slice(0, 24)).map(face).join("")}</div>`);
-    const crewFaces = Object.entries(crew).flatMap(([r, ids]) => people(ids).map(p => ({...p, note: ROLE[r]})));
+    /* one card per person, listing every job they did (Kurosawa: Director · Writer · Editor) */
+    const jobs = new Map();
+    for(const [r, ids] of Object.entries(crew)) for(const i of ids) jobs.set(i, [...(jobs.get(i) || []), ROLE[r]]);
+    const crewFaces = people([...jobs.keys()]).map(p => ({...p, note: jobs.get(p.id).join(" · ")}));
     if(crewFaces.length) show("s-crew", `<div class="faces">${crewFaces.map(face).join("")}</div>`);
     const dname = info[dirs[0]]?.name;
     if(dname) $("s-more").querySelector("h2").textContent = `More by ${dname}`;
@@ -424,6 +489,30 @@ async function filmPage(ctx){
     if(!alive(ctx) || !films.length) return;
     await posters(films.map(f => f.title));
     if(alive(ctx)) show("s-mov", `<div class="wall strip">${films.map(poster).join("")}</div>`);
+  }).catch(() => {});
+
+  filmLineage(id).then(async rows => {
+    if(!alive(ctx) || !rows.length) return;
+    const items = rows.map(r => ({id: qid(r.x), name: label(r, "x") || artTitle(r.a), title: artTitle(r.a), year: r.y ? +r.y : 0, rel: r.rel, how: r.how}))
+      .filter(x => x.name);
+    const seen = new Set(), pick = rel => items.filter(x => x.rel === rel && !seen.has(x.id) && seen.add(x.id)).slice(0, 8).sort((a, b) => a.year - b.year);
+    const from = pick("from"), to = pick("to");
+    if(!from.length && !to.length) return;
+    await posters([name, ...[...from, ...to].map(x => x.title)].filter(Boolean));
+    if(!alive(ctx)) return;
+    const col = (label, list) => `<div class="ba-col"><h3 class="minor">${label}</h3>${list.length
+      ? `<div class="ba-list">${list.map(x => `<div class="ba-item">${poster(x)}<span class="ba-how">${esc(x.how)}</span></div>`).join("")}</div>`
+      : `<p class="status">Nothing on record</p>`}</div>`;
+    show("s-line", `<div class="before-after">${col("Came from", from)}
+      <div class="ba-this"><span class="ba-arrow" aria-hidden="true">→</span>${poster({id, name: name.replace(/ \((\d{4} )?(\w+ )?film\)$/, ""), title: name, year: +year || 0})}<span class="ba-arrow" aria-hidden="true">→</span></div>
+      ${col("Led to", to)}</div>`);
+  }).catch(() => {});
+
+  if(year) ofYear(year, id).then(async rows => {
+    const films = filmRows(rows);
+    if(!alive(ctx) || films.length < 4) return;
+    await posters(films.map(f => f.title));
+    if(alive(ctx)) show("s-year", `<div class="wall strip">${films.map(poster).join("")}</div>`);
   }).catch(() => {});
 
   gallery(e).then(g => { if(alive(ctx) && g.length) show("s-stills", galleryHtml(g)); }).catch(() => {});
