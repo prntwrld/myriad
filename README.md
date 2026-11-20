@@ -16,7 +16,7 @@ Myriad should let you find things you didn't know to look for. `discover.js` hol
 
 Cinema's front page (`cinema/landing.js`) uses them: a double feature of the day joined by a real connection, Drift through films and the people who made them, on this day, a door by decade and country, and Shuffle. Every Cinema page has a *Drift from here* link.
 
-On this day and the door use `cinema/data.json`, thousands of well-known films and film people made ahead of time by `tools/build_cinema_data.py` (run it from the repository root; it takes about 15 minutes, pausing between queries to be polite to Wikidata). Until that file exists, the page uses a built-in canon of well-known films and leaves those two sections out.
+On this day and the door use `cinema/data.json`, thousands of well-known films and film people made ahead of time by `tools/build_cinema_data.py` (a GitHub Action, `.github/workflows/cinema-data.yml`, runs it every Monday and commits the result; start it by hand from the repository's Actions tab, or run the script from the repository root — it takes about 15 minutes, pausing between queries to be polite to Wikidata). Until that file exists, the page uses a built-in canon of well-known films and leaves those two sections out.
 
 ## Sources
 - [Wikipedia](https://www.wikipedia.org) and [Wikidata](https://www.wikidata.org)
