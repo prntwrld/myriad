@@ -5,28 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Myriad — a myriad of info</title>
 <meta name="description" content="Clean topic pages drawn from the world's open libraries. No ads, no clutter.">
+<script>try{ const t = localStorage.getItem("myriad-theme"); if(t) document.documentElement.dataset.theme = t; }catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="wrap">
-  <h1 class="logo" id="logo">Myriad<span>.</span></h1>
+<header class="wrap masthead">
+  <a class="logo" id="logo" href="./">Myriad<span class="dot">.</span></a>
   <p class="tag">Clean topic pages from the world's open libraries. No ads, no clutter.</p>
-  <form id="f">
+  <form id="f" role="search">
     <input id="q" type="search" placeholder="Look up anything — Mount Rainier, beavers, jazz…" autocomplete="off" aria-label="Search">
-    <button>Go</button>
+    <button>Search</button>
   </form>
-  <div class="chips" id="chips"></div>
+  <button class="theme" id="theme" type="button" aria-label="Switch between light and dark" title="Light / dark">
+    <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg>
+  </button>
+  <nav class="chips" id="chips" aria-label="Suggestions"></nav>
 </header>
 
 <main class="wrap">
   <div id="home">
-    <section class="shelf">
-      <h2>Browse the best links</h2>
-      <p class="sub">Hand-picked starting points. Tap a topic.</p>
-      <div class="home-topics" id="topics"></div>
+    <section class="section">
+      <h2 class="label">The reading room</h2>
+      <p class="sub">Hand-picked starting points, by subject.</p>
+      <div class="room" id="room"></div>
     </section>
   </div>
 
@@ -34,50 +39,83 @@
     <div class="hero">
       <article class="lead" id="lead"><p class="status">Looking it up…</p></article>
       <aside class="side">
-        <img class="pic" id="pic" alt="" hidden onerror="this.hidden=true">
-        <div class="facts" id="facts" hidden><h2>Quick facts</h2><dl id="factlist"></dl></div>
+        <figure class="plate" id="plate" hidden><img class="pic" id="pic" alt=""></figure>
+        <div class="facts" id="facts" hidden><h2 class="label">Quick facts</h2><dl id="factlist"></dl></div>
       </aside>
     </div>
-    <section class="shelf" id="tocbox" hidden><h2>Explore the article</h2><p class="sub">Jump to a section on Wikipedia</p><div class="toc" id="toc"></div></section>
-    <section class="shelf" id="mapbox" hidden><h2>On the map</h2><p class="sub" id="coords"></p><div id="map"></div></section>
-    <section class="shelf best" id="best" hidden><h2>★ Best links</h2><p class="sub">Hand-picked by Myriad</p><div class="grid" id="best-grid"></div></section>
-    <section class="shelf" id="relbox" hidden><h2>Related topics</h2><p class="sub">Keep exploring</p><div class="toc" id="rel"></div></section>
-    <section class="shelf lib"><h2>Free books</h2><p class="sub">Public-domain books, free to read — Open Library &amp; Project Gutenberg</p><div class="grid" id="books"></div></section>
-    <section class="shelf lib"><h2>Museum</h2><p class="sub">The Metropolitan Museum of Art — open access</p><div class="grid" id="met"></div></section>
-    <section class="shelf lib"><h2>Archive</h2><p class="sub">Internet Archive — books, film, audio</p><div class="grid" id="ia"></div></section>
+    <section class="section" id="tocbox" hidden><h2 class="label">In the article</h2><p class="sub">Jump to a section on Wikipedia</p><div class="toc" id="toc"></div></section>
+    <section class="section" id="best" hidden><h2 class="label">Further reading</h2><p class="sub">Trusted sources with a page on exactly this topic</p><ul class="refs" id="refs"></ul></section>
+    <section class="section" id="mapbox" hidden><h2 class="label">On the map</h2><p class="sub" id="coords"></p><div id="map"></div></section>
+    <section class="section" id="relbox" hidden><h2 class="label">Related topics</h2><p class="sub">Keep exploring</p><div class="toc" id="rel"></div></section>
+    <section class="section shelf lib"><h2 class="label">Free books</h2><p class="sub">Public-domain books, free to read in full — Open Library &amp; Project Gutenberg</p><div class="row" id="books"></div></section>
+    <section class="section shelf lib"><h2 class="label">Museum</h2><p class="sub">The Metropolitan Museum of Art — open access</p><div class="row" id="met"></div></section>
+    <section class="section shelf lib"><h2 class="label">Archive</h2><p class="sub">Internet Archive — books, film, audio</p><div class="row" id="ia"></div></section>
   </div>
 </main>
 
-<footer>Myriad draws on free public collections: Wikipedia, Wikidata, OpenStreetMap, Open Library, Project Gutenberg, The Met, and the Internet Archive. Text from Wikipedia is available under CC BY-SA.</footer>
+<footer class="wrap">Myriad draws on free public collections: Wikipedia, Wikidata, OpenStreetMap, Open Library, Project Gutenberg, The Met, and the Internet Archive. Text from Wikipedia is available under CC BY-SA.</footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 {
-/* ---------- Hand-picked best links (edit freely — this is the heart of Myriad) ---------- */
+/* ---------- The reading room: hand-picked sites by subject, shown on the home page ---------- */
 const BEST = {
-  "Learning anything": {keys:["learn","learning","school","study","math","science","course"], links:[
+  "Learning anything": [
     {t:"Khan Academy", u:"https://www.khanacademy.org", why:"Free, patient lessons from arithmetic to organic chemistry."},
     {t:"MIT OpenCourseWare", u:"https://ocw.mit.edu", why:"Real MIT course materials, free."},
-    {t:"Crash Course", u:"https://www.youtube.com/@crashcourse", why:"Fast, fun video intros to dozens of subjects."}]},
-  "Data & the world": {keys:["data","world","population","climate","economy","statistics"], links:[
+    {t:"Crash Course", u:"https://www.youtube.com/@crashcourse", why:"Fast, fun video intros to dozens of subjects."}],
+  "Data & the world": [
     {t:"Our World in Data", u:"https://ourworldindata.org", why:"The clearest charts on how the world is changing."},
-    {t:"CIA World Factbook", u:"https://www.cia.gov/the-world-factbook/", why:"Quick facts on every country."}]},
-  "Space": {keys:["space","nasa","planet","mars","moon","star","astronomy","galaxy"], links:[
+    {t:"CIA World Factbook", u:"https://www.cia.gov/the-world-factbook/", why:"Quick facts on every country."}],
+  "Space": [
     {t:"NASA", u:"https://www.nasa.gov", why:"Missions, images, and news straight from the source."},
-    {t:"NASA Image Library", u:"https://images.nasa.gov", why:"Huge free archive of space photos and video."}]},
-  "Philosophy": {keys:["philosophy","ethics","logic","mind"], links:[
-    {t:"Stanford Encyclopedia of Philosophy", u:"https://plato.stanford.edu", why:"Rigorous, expert-written entries."}]},
-  "Nature & plants": {keys:["plant","plants","nature","tree","trees","bird","birds","animal","mushroom","fern","beaver","beavers","rodent"], links:[
+    {t:"NASA Image Library", u:"https://images.nasa.gov", why:"Huge free archive of space photos and video."}],
+  "Philosophy": [
+    {t:"Stanford Encyclopedia of Philosophy", u:"https://plato.stanford.edu", why:"Rigorous, expert-written entries."},
+    {t:"Internet Encyclopedia of Philosophy", u:"https://iep.utm.edu", why:"Peer-reviewed, readable introductions."}],
+  "Nature & plants": [
     {t:"iNaturalist", u:"https://www.inaturalist.org", why:"Snap a photo, get an ID from scientists and naturalists."},
-    {t:"Washington Native Plant Society", u:"https://www.wnps.org", why:"The go-to for PNW native plants."}]},
-  "Pacific Northwest history": {keys:["tacoma","seattle","washington","pnw","northwest","puget","federal way","rainier"], links:[
+    {t:"Washington Native Plant Society", u:"https://www.wnps.org", why:"The go-to for PNW native plants."}],
+  "Pacific Northwest history": [
     {t:"HistoryLink.org", u:"https://www.historylink.org", why:"The free encyclopedia of Washington State history."},
-    {t:"USGS", u:"https://www.usgs.gov", why:"Maps, volcanoes, earthquakes, and water — Rainier included."}]},
-  "Old books & media": {keys:["book","books","reading","film","archive","library"], links:[
+    {t:"USGS", u:"https://www.usgs.gov", why:"Maps, volcanoes, earthquakes, and water — Rainier included."}],
+  "Old books & media": [
     {t:"Project Gutenberg", u:"https://www.gutenberg.org", why:"70,000+ free public-domain ebooks."},
     {t:"Internet Archive", u:"https://archive.org", why:"Books, films, music, and the Wayback Machine."},
-    {t:"Library of Congress", u:"https://www.loc.gov", why:"Maps, photos, and historic newspapers."}]}
+    {t:"Library of Congress", u:"https://www.loc.gov", why:"Maps, photos, and historic newspapers."}]
 };
+/* Hand-picked links for one exact topic (Wikipedia title). These appear first under "Further reading". */
+const PICKS = {
+  "Mount Rainier": [
+    {t:"Mount Rainier National Park", src:"National Park Service", u:"https://www.nps.gov/mora/", why:"Visiting, trails, conditions, and park history."},
+    {t:"Mount Rainier volcano", src:"USGS Cascades Volcano Observatory", u:"https://www.usgs.gov/volcanoes/mount-rainier", why:"Hazards, monitoring, and eruption history."}]
+};
+/* Other encyclopedias, found through the topic's Wikidata IDs. Shown beside "Read the full article". */
+const READ_ON = [
+  ["P1417","Britannica","https://www.britannica.com/$1"],
+  ["P3123","Stanford Encyclopedia of Philosophy","https://plato.stanford.edu/entries/$1/"],
+  ["P5088","Internet Encyclopedia of Philosophy","https://www.iep.utm.edu/$1/"],
+  ["P9000","World History Encyclopedia","https://www.worldhistory.org/$1/"],
+  ["P9470","HistoryLink","https://www.historylink.org/File/$1"],
+  ["P5395","The Canadian Encyclopedia","https://www.thecanadianencyclopedia.ca/en/article/$1/"],
+  ["P7691","The Oregon Encyclopedia","https://www.oregonencyclopedia.org/articles/$1/"],
+  ["P1563","MacTutor History of Mathematics","https://mathshistory.st-andrews.ac.uk/Biographies/$1/"]
+];
+/* Specialist sources, also from Wikidata IDs, listed under "Further reading". */
+const REFS = [
+  ["P1886","Smithsonian Global Volcanism Program","https://volcano.si.edu/volcano.cfm?vn=$1","Eruption history and volcano data."],
+  ["P3151","iNaturalist","https://www.inaturalist.org/taxa/$1","Photos, range map, and sightings by naturalists."],
+  ["P4024","Animal Diversity Web","https://animaldiversity.org/accounts/$1/","University of Michigan species account."],
+  ["P830","Encyclopedia of Life","https://eol.org/pages/$1","Species facts, media, and traits."],
+  ["P627","IUCN Red List","https://www.iucnredlist.org/details/$1/0","Conservation status and threats."],
+  ["P1938","Project Gutenberg","https://www.gutenberg.org/ebooks/author/$1","Free ebooks by this author."],
+  ["P3847","Open Library","https://openlibrary.org/subjects/$1","Books on this subject."],
+  ["P1225","U.S. National Archives","https://catalog.archives.gov/id/$1","Records and photographs in the national catalog."]
+];
+const SISTERS = [
+  ["enwikivoyage","Wikivoyage","Travel guide."],
+  ["enwikiquote","Wikiquote","Quotations by and about this topic."]
+];
 const SUGGEST = ["Mount Rainier","Beaver","Tacoma, Washington","Library of Alexandria","Steam engine","Orca"];
 
 /* Wikidata properties shown as quick facts, in order */
@@ -99,15 +137,29 @@ const strip = h => { const d = document.createElement("div"); d.innerHTML = h; r
 const getJSON = async (url, ms=15000, tries=2) => {
   const r = await fetch(url, {signal: AbortSignal.timeout(ms)});
   if(r.status === 429 && tries > 1){ await new Promise(ok => setTimeout(ok, 1500)); return getJSON(url, ms, tries-1); }
-  if(!r.ok) throw new Error(r.status); return r.json();
+  if(!r.ok) throw new Error(r.status);
+  return r.json();
 };
 const W = "https://en.wikipedia.org/w/api.php?format=json&origin=*&";
-const card = ({u,t,m,d,img}) => `<a class="card" href="${esc(u)}" target="_blank" rel="noopener">
-  ${img?`<img loading="lazy" src="${esc(img)}" alt="" onerror="this.remove()">`:""}
-  <div class="t">${esc(t)}</div>${m?`<div class="m">${esc(m)}</div>`:""}${d?`<div class="d">${esc(d)}</div>`:""}</a>`;
-const fill = (el, items) => { $(el).innerHTML = items.length ? items.map(card).join("") : `<p class="status">Nothing found here.</p>`; };
-const topicChip = t => `<a class="chip" data-t="${esc(t)}">${esc(t)}</a>`;
+const WD = "https://www.wikidata.org/w/api.php?format=json&origin=*&";
+const ext = `target="_blank" rel="noopener"`;
+/* one object on a shelf: the thing itself standing on the plank, a placard underneath */
+const cover = (t, shelf) => `<span class="cover${shelf === "ia" ? " grey" : ""}">${esc(t)}</span>`;
+const item = ({u,t,m,img}, shelf) => `<a class="item" href="${esc(u)}" ${ext}>
+  <div class="obj">${img ? `<img loading="lazy" src="${esc(img)}" alt="" data-t="${esc(t)}">` : cover(t, shelf)}</div>
+  <div class="placard"><div class="t">${esc(t)}</div>${m?`<div class="m">${esc(m)}</div>`:""}</div></a>`;
+const fill = (el, items) => { $(el).innerHTML = items.length ? items.map(x => item(x, el)).join("") : `<p class="status">Nothing found on this shelf.</p>`; };
+const topicLink = t => `<a class="tag-link" data-go="${esc(t)}">${esc(t)}</a>`;
 let token = 0, map = null;
+
+/* a shelf image that fails to load becomes a plain cloth cover with the title;
+   the topic photo is simply hidden */
+document.addEventListener("error", e => {
+  const img = e.target;
+  if(img.tagName !== "IMG") return;
+  if(img.id === "pic") $("plate").hidden = true;
+  else if(img.closest(".obj")) img.outerHTML = cover(img.dataset.t || "", img.closest(".row")?.id);
+}, true);
 
 /* ---------- Wikipedia + Wikidata ---------- */
 async function wikiSearch(q, n=6){
@@ -121,6 +173,10 @@ async function sections(title){
   const j = await getJSON(W + "action=parse&prop=sections&redirects=1&page=" + encodeURIComponent(title));
   return (j.parse?.sections || []).filter(s => s.toclevel === 1)
     .map(s => ({name: strip(s.line), anchor: s.anchor})).filter(s => !SKIP_SECTIONS.test(s.name));
+}
+async function entity(qid){
+  const j = await getJSON(WD + "action=wbgetentities&props=claims|sitelinks/urls&sitefilter=simplewiki|enwikivoyage|enwikiquote&ids=" + qid);
+  return j.entities?.[qid] || {};
 }
 function fmtTime(v){
   const m = /^([+-])(\d+)-(\d\d)-(\d\d)/.exec(v.time); if(!m) return "";
@@ -138,9 +194,9 @@ function pickClaims(list){
   const pref = good.filter(c => c.rank === "preferred");
   return pref.length ? pref : good;
 }
-async function facts(qid){
-  const j = await getJSON("https://www.wikidata.org/w/api.php?action=wbgetentities&props=claims&format=json&origin=*&ids=" + qid);
-  const claims = j.entities?.[qid]?.claims || {};
+const idOf = (claims, pid) => { const c = claims[pid] && pickClaims(claims[pid])[0]; return c ? String(c.mainsnak.datavalue.value) : ""; };
+const link = (pattern, id) => pattern.replace("$1", encodeURI(id).replace(/[?#]/g, encodeURIComponent));
+async function facts(claims){
   const rows = [], need = new Set();
   for(const [pid,label] of FACTS){
     if(!claims[pid]) continue;
@@ -163,10 +219,22 @@ async function facts(qid){
   }
   if(need.size){
     const ids = [...need].slice(0,50).join("|");
-    const l = await getJSON("https://www.wikidata.org/w/api.php?action=wbgetentities&props=labels&languages=en&format=json&origin=*&ids=" + ids);
+    const l = await getJSON(WD + "action=wbgetentities&props=labels&languages=en&ids=" + ids);
     rows.forEach(r => r.vals.forEach(v => { if(v.id) v.text = l.entities?.[v.id]?.labels?.en?.value || ""; }));
   }
   return rows.map(r => ({label:r.label, vals:r.vals.filter(v => v.text || v.url)})).filter(r => r.vals.length);
+}
+/* other encyclopedias for "Read the full article", and specialist sources for "Further reading" */
+function sources(e, name){
+  const claims = e.claims || {}, sl = e.sitelinks || {};
+  const read = READ_ON.filter(([p]) => idOf(claims, p)).map(([p, t, pat]) => ({t, u: link(pat, idOf(claims, p))}));
+  if(sl.simplewiki) read.push({t:"Simple English Wikipedia", u: sl.simplewiki.url});
+  const refs = [
+    ...(PICKS[name] || []),
+    ...REFS.filter(([p]) => idOf(claims, p)).map(([p, src, pat, why]) => ({src, t:name, u: link(pat, idOf(claims, p)), why})),
+    ...SISTERS.filter(([k]) => sl[k]).map(([k, src, why]) => ({src, t: sl[k].title, u: sl[k].url, why}))
+  ];
+  return {read, refs};
 }
 
 /* ---------- other libraries ---------- */
@@ -208,11 +276,6 @@ async function archive(q){
   return (j.response?.docs||[]).map(d => ({u:`https://archive.org/details/${d.identifier}`, t:d.title,
     m:[d.mediatype,d.year].filter(Boolean).join(" · "), img:`https://archive.org/services/img/${d.identifier}`}));
 }
-function best(words){
-  words = words.toLowerCase();
-  return Object.entries(BEST).filter(([name,b]) => name.toLowerCase() === words || b.keys.some(k => new RegExp("\\b"+k+"\\b").test(words)))
-    .flatMap(([name,b]) => b.links.map(l => ({u:l.u, t:l.t, m:name, d:l.why})));
-}
 
 /* ---------- render a topic page ---------- */
 async function openTopic(title, others=[], query=""){
@@ -221,7 +284,7 @@ async function openTopic(title, others=[], query=""){
   window.scrollTo(0,0);
   $("q").value = query || title;
   $("lead").innerHTML = `<p class="status">Looking it up…</p>`;
-  ["pic","facts","tocbox","mapbox","best","relbox"].forEach(id => $(id).hidden = true);
+  ["plate","facts","tocbox","mapbox","best","relbox"].forEach(id => $(id).hidden = true);
   ["books","met","ia"].forEach(id => $(id).innerHTML = `<p class="status">Searching…</p>`);
 
   let s;
@@ -240,12 +303,13 @@ async function openTopic(title, others=[], query=""){
   $("lead").innerHTML = `<h1>${esc(name)}</h1>
     ${s.description ? `<p class="desc">${esc(s.description)}</p>` : ""}
     <p class="extract">${esc(disamb ? "This name can mean several things. Pick one below." : s.extract)}</p>
-    <a class="more" href="${esc(s.content_urls?.desktop?.page)}" target="_blank" rel="noopener">Read the full article on Wikipedia →</a>
-    ${otherLinks.length ? `<p class="others">Did you mean: ${otherLinks.map(o => `<a data-t="${esc(o)}">${esc(o)}</a>`).join(" · ")}</p>` : ""}`;
+    <p class="readon"><b>Read the full article</b><span id="readon"><a href="${esc(s.content_urls?.desktop?.page)}" ${ext}>Wikipedia</a></span></p>
+    ${otherLinks.length ? `<p class="others">Did you mean: ${otherLinks.map(o => `<a data-go="${esc(o)}">${esc(o)}</a>`).join(" · ")}</p>` : ""}`;
+
   /* ask for a 960px copy rather than the full original (which can be several MB) */
   const thumb = s.thumbnail?.source, orig = s.originalimage;
   const img = thumb && orig?.width > 960 && /\/\d+px-/.test(thumb) ? thumb.replace(/\/\d+px-/, "/960px-") : orig?.source || thumb;
-  if(img){ $("pic").src = img; $("pic").hidden = false; }
+  if(img){ $("pic").src = img; $("plate").hidden = false; }
 
   if(s.coordinates){
     const {lat, lon} = s.coordinates;
@@ -260,19 +324,25 @@ async function openTopic(title, others=[], query=""){
     }
   }
 
-  const b = best(query + " " + name); $("best").hidden = !b.length; fill("best-grid", b);
-
-  if(s.wikibase_item && !disamb) facts(s.wikibase_item).then(rows => {
+  if(s.wikibase_item && !disamb) entity(s.wikibase_item).then(async e => {
+    if(my !== token) return;
+    const {read, refs} = sources(e, name);
+    $("readon").insertAdjacentHTML("beforeend", read.map(r => `<a href="${esc(r.u)}" ${ext}>${esc(r.t)}</a>`).join(""));
+    if(refs.length){
+      $("refs").innerHTML = refs.map(r => `<li><span class="src">${esc(r.src)}</span><a href="${esc(r.u)}" ${ext}>${esc(r.t)}</a>${r.why ? `<span class="why">${esc(r.why)}</span>` : ""}</li>`).join("");
+      $("best").hidden = false;
+    }
+    const rows = await facts(e.claims || {});
     if(my !== token || !rows.length) return;
     $("factlist").innerHTML = rows.map(r => `<dt>${esc(r.label)}</dt><dd>${r.vals.map(v =>
-      v.url ? `<a href="${esc(v.url)}" target="_blank" rel="noopener">${esc(v.url.replace(/^https?:\/\/(www\.)?/,"").replace(/\/$/,""))}</a>` : esc(v.text)).join(", ")}</dd>`).join("");
+      v.url ? `<a href="${esc(v.url)}" ${ext}>${esc(v.url.replace(/^https?:\/\/(www\.)?/,"").replace(/\/$/,""))}</a>` : esc(v.text)).join(", ")}</dd>`).join("");
     $("facts").hidden = false;
   }).catch(()=>{});
 
   sections(name).then(secs => {
     if(my !== token || !secs.length) return;
     const base = s.content_urls?.desktop?.page || "";
-    $("toc").innerHTML = secs.map(x => `<a class="chip" href="${esc(base + "#" + x.anchor)}" target="_blank" rel="noopener">${esc(x.name)}</a>`).join("");
+    $("toc").innerHTML = secs.map(x => `<a class="tag-link" href="${esc(base + "#" + x.anchor)}" ${ext}>${esc(x.name)}</a>`).join("");
     $("tocbox").hidden = false;
   }).catch(()=>{});
 
@@ -280,7 +350,7 @@ async function openTopic(title, others=[], query=""){
     rel = rel.filter(t => t !== name).slice(0, disamb ? 10 : 8);
     if(my !== token || !rel.length) return;
     $("relbox").querySelector("h2").textContent = disamb ? "Which one?" : "Related topics";
-    $("rel").innerHTML = rel.map(topicChip).join(""); $("relbox").hidden = false;
+    $("rel").innerHTML = rel.map(topicLink).join(""); $("relbox").hidden = false;
   }).catch(()=>{});
 
   /* a disambiguation page ("Mercury") matches too many things for the libraries to be useful:
@@ -316,14 +386,22 @@ window.addEventListener("popstate", e => {
 });
 
 $("f").addEventListener("submit", e => { e.preventDefault(); search($("q").value); });
-$("logo").addEventListener("click", () => home());
+/* the ✕ in the search box (and Esc) empties it: go back to the front page */
+$("q").addEventListener("search", () => { if(!$("q").value && document.body.classList.contains("on")) home(); });
+$("logo").addEventListener("click", e => { e.preventDefault(); home(); });
 document.addEventListener("click", e => {
-  const a = e.target.closest("[data-t]"); if(!a) return;
-  e.preventDefault(); go(a.dataset.t);
+  const a = e.target.closest("[data-go]"); if(!a) return;
+  e.preventDefault(); go(a.dataset.go);
 });
-$("chips").innerHTML = SUGGEST.map(topicChip).join("");
-$("topics").innerHTML = Object.keys(BEST).map(n => `<button data-n="${esc(n)}">${esc(n)}</button>`).join("");
-$("topics").addEventListener("click", e => { const n = e.target.closest("button")?.dataset.n; if(n) search(BEST[n].keys[0]); });
+$("theme").addEventListener("click", () => {
+  const now = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const next = now === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem("myriad-theme", next); } catch(e){}
+});
+$("chips").innerHTML = SUGGEST.map(t => `<a data-go="${esc(t)}">${esc(t)}</a>`).join("");
+$("room").innerHTML = Object.entries(BEST).map(([n, links]) => `<div><h3>${esc(n)}</h3><ul>${links.map(l =>
+  `<li><a href="${esc(l.u)}" ${ext}>${esc(l.t)}</a><span>${esc(l.why)}</span></li>`).join("")}</ul></div>`).join("");
 
 const p = new URLSearchParams(location.search);
 if(p.get("t")) openTopic(p.get("t"));

@@ -14,8 +14,25 @@ Live at [myriadof.info](https://myriadof.info)
 - The Metropolitan Museum of Art Open Access (art and objects, v1.1 search API)
 - Internet Archive's library collections (books, film, audio)
 
-## Best links
-The hand-picked links live in the `BEST` object near the top of the script in `index.html`. Add a topic, its keywords, and its links. That curated list is what makes Myriad more than a search box.
+## Links: what goes where
+All of these live near the top of the script in `index.html`:
+
+- **`BEST`** — *The reading room* on the front page: great sites, grouped by subject. Homepages are fine here.
+- **`PICKS`** — hand-picked links for one exact topic (keyed by Wikipedia title), shown first under
+  *Further reading*. Link to the page about that topic, not a site's homepage.
+- **`READ_ON`** — other encyclopedias (Britannica, Stanford Encyclopedia of Philosophy, HistoryLink…)
+  shown beside *Read the full article*. They are found automatically through the topic's Wikidata IDs,
+  so they always point at the right article.
+- **`REFS`** — specialist sources (Smithsonian volcano data, iNaturalist, Animal Diversity Web…),
+  also found through Wikidata IDs, listed under *Further reading*.
+
+To add a source to `READ_ON` or `REFS`, find its Wikidata property (for example `P1417` is
+Britannica) and the property's "formatter URL", where `$1` stands for the ID.
+
+## Files
+- `index.html` — the page and its script
+- `style.css` — the look (classical type, light and dark themes)
+- `v0.html` — the first design, kept for comparison at `/v0.html`
 
 ## Hosting (GitHub Pages)
 1. Repo **Settings → Pages**: Source = *Deploy from a branch*, `main`, `/ (root)`.
