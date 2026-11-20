@@ -689,7 +689,7 @@ body{--stripe-1:color-mix(in srgb,var(--accent) 35%,#e8913a);--stripe-2:var(--ac
   & .soon{grid-column:1;justify-self:start;margin-top:10px;font:600 11px/1 var(--display);letter-spacing:.2em;text-transform:uppercase;
     color:var(--accent);border:1px solid currentColor;border-radius:999px;padding:6px 12px}
   /* pill buttons that look pressable */
-  & button:not(.dn-opt):not(#f button){border-radius:999px;transition:transform .15s ease,background .15s ease,box-shadow .15s ease}
+  & button:not(.dn-opt):not(#f button):not(.tabs button){border-radius:999px;transition:transform .15s ease,background .15s ease,box-shadow .15s ease}
   & button:not(.linkish):active{transform:translateY(1px)}
   & button.ghost{border-color:var(--accent);color:var(--accent)}
   & button.ghost:hover{background:var(--accent);color:var(--bg);border-color:var(--accent)}
