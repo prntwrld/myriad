@@ -11,7 +11,6 @@ const ext = `target="_blank" rel="noopener"`;
 const strip = t => t.replace(/ \((\d{4} )?(\w+ )?film\)$/, "");
 const FILM = "wd:Q11424";
 const METRONOME = WINGS.find(w => w.id === "metronome");
-const MUSIC_JOBS = ["Q639669","Q177220","Q36834","Q488205","Q2252262","Q753110","Q855091","Q486748","Q130857","Q183945","Q1415090"];
 const ROLE_WHY = {
   toPerson: {dir: "directed by", dop: "shot by", mus: "music by", wri: "written by", cast: "starring", edi: "edited by"},
   toFilm: {dir: "who also directed", dop: "who also shot", mus: "who also scored", wri: "who also wrote", cast: "who also appears in", edi: "who also edited"}
@@ -86,10 +85,10 @@ const filmNode = (id, title, name, year) => ({key: id, kind: "film", id, name: n
   img: C.posterCache[title] || ""});
 async function withPoster(n){ if(n.kind === "film" && !n.img){ await C.posters([n.title]); n.img = C.posterCache[n.title] || ""; } return n; }
 async function fromFilm(n){
-  const rows = await C.sparql(`SELECT ?x ?xLabel ?r (MAX(?sl) AS ?pop) (SAMPLE(?img) AS ?pic) (SAMPLE(?art) AS ?a) (SAMPLE(?m) AS ?music) WHERE {
+  const rows = await C.sparql(`SELECT ?x ?xLabel ?r (MAX(?sl) AS ?pop) (SAMPLE(?img) AS ?pic) (SAMPLE(?art) AS ?a) WHERE {
     VALUES (?p ?r) { (wdt:P57 "dir") (wdt:P344 "dop") (wdt:P86 "mus") (wdt:P58 "wri") (wdt:P161 "cast") (wdt:P1040 "edi") }
     wd:${n.id} ?p ?x . ?x wikibase:sitelinks ?sl . ?art schema:about ?x ; schema:isPartOf <https://en.wikipedia.org/> .
-    OPTIONAL { ?x wdt:P18 ?img } OPTIONAL { ?x wdt:P106 ?m . VALUES ?m { ${MUSIC_JOBS.map(q => "wd:" + q).join(" ")} } }
+    OPTIONAL { ?x wdt:P18 ?img }
     SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
   } GROUP BY ?x ?xLabel ?r ORDER BY DESC(?pop) LIMIT 30`);
   /* the crew make more surprising steps than the stars, so weigh them up; and step to people
@@ -97,7 +96,9 @@ async function fromFilm(n){
   const boost = {dop: 3, mus: 3, wri: 2, edi: 2, dir: 2.5, cast: 0.6};
   const cands = rows.map(r => ({r: r.r, node: {key: C.qid(r.x), kind: "person", id: C.qid(r.x), name: C.label(r, "x") || C.artTitle(r.a), title: C.artTitle(r.a),
       href: here(C.artTitle(r.a)), img: r.pic ? C.commons(r.pic, 300) : "", sub: "",
-      chips: r.music && METRONOME ? [{wing: METRONOME, href: topicIn(METRONOME, C.artTitle(r.a))}] : []},
+      /* a link onward to Metronome only when the step itself is musical ("music by"): Wikidata lists side careers
+         (a director who once played in a band), and those shouldn't send you to the music wing */
+      chips: r.r === "mus" && METRONOME ? [{wing: METRONOME, href: topicIn(METRONOME, C.artTitle(r.a))}] : []},
       w: Math.sqrt(+r.pop) * (boost[r.r] || 1) * (r.pic ? 1 : 0.35)}))
     .filter(c => c.node.name && +rows.find(r => C.qid(r.x) === c.node.id).pop >= 8);
   const out = []; while(cands.length){ const c = D.pick(cands, x => x.w); cands.splice(cands.indexOf(c), 1); out.push({node: c.node, why: ROLE_WHY.toPerson[c.r] || "with"}); }
