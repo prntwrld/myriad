@@ -936,3 +936,8 @@ button.dn-opt:hover .dn-go{transform:translateX(3px)}
 .wc-pic.framed img{position:relative;height:84%;width:auto;max-width:90%;object-fit:contain;box-shadow:0 10px 22px -8px rgba(0,0,0,.7);transition:transform .6s ease}
 .wc-pic.framed:hover img{transform:scale(1.03)}
 .wc-pic.framed .wc-cap{z-index:1}
+/* posters, covers and box art fill the card too, cropped from a little below the top where the picture usually is */
+.wc-pic.tall-src img{object-position:center 28%}
+/* a movement's relatives: a label, then its links */
+.rel-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin:0 0 10px}
+.rel-row b{font:600 11px/1 var(--display);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);min-width:9em}

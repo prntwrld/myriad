@@ -113,6 +113,18 @@ const ofYear = (year, not) => sparql(`SELECT ?film ?filmLabel (MIN(YEAR(?d)) AS 
   SERVICE wikibase:label { bd:serviceParam wikibase:language "${LANGS}". }
 } GROUP BY ?film ?filmLabel ORDER BY DESC(?pop) LIMIT 14`);
 
+/* a movement's or genre's relatives: what it grew out of, its offshoots (film noir → neo-noir), what followed */
+const relatives = id => sparql(`SELECT ?x ?xLabel ?rel (SAMPLE(?art) AS ?a) (MAX(?sl) AS ?pop) WHERE {
+  { wd:${id} wdt:P155 ?x . BIND("before" AS ?rel) } UNION { ?x wdt:P156 wd:${id} . BIND("before" AS ?rel) }
+  UNION { wd:${id} wdt:P156 ?x . BIND("after" AS ?rel) } UNION { ?x wdt:P155 wd:${id} . BIND("after" AS ?rel) }
+  UNION { wd:${id} wdt:P737 ?x . BIND("before" AS ?rel) } UNION { ?x wdt:P737 wd:${id} . BIND("after" AS ?rel) }
+  UNION { ?x wdt:P279 wd:${id} . BIND("offshoot" AS ?rel) } UNION { wd:${id} wdt:P279 ?x . BIND("parent" AS ?rel) }
+  UNION { ?x wdt:P144 wd:${id} . BIND("after" AS ?rel) }
+  ?x wikibase:sitelinks ?sl . FILTER(?sl >= 5) FILTER(?x NOT IN (wd:Q201658, wd:Q1792379, wd:Q483394, wd:Q2297927))
+  ?art schema:about ?x ; schema:isPartOf <https://en.wikipedia.org/> .
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "${LANGS}". }
+} GROUP BY ?x ?xLabel ?rel ORDER BY DESC(?pop) LIMIT 30`);
+
 /* names, portraits and articles for a list of Wikidata items (a film's cast and crew) */
 const describe = ids => ids.length ? sparql(`SELECT ?x ?xLabel (SAMPLE(?img) AS ?pic) (SAMPLE(?art) AS ?a) WHERE {
   VALUES ?x { ${ids.map(i => "wd:" + i).join(" ")} }
@@ -269,7 +281,7 @@ function shell(){
       <article class="lead" id="lead"><p class="status">Looking it up…</p></article>
       <aside class="side"><figure class="plate" id="plate" hidden><img class="pic" id="pic" alt=""></figure>
         <div class="facts" id="facts" hidden><h2 class="label">Quick facts</h2><dl id="factlist"></dl></div></aside></div>
-    <div id="views"></div>`;
+    <div id="views"></div><div id="cshelves"></div>`;
 }
 
 async function openTopic(title, others=[], query=""){
@@ -287,11 +299,13 @@ async function openTopic(title, others=[], query=""){
   $("lead").innerHTML = `<h1>${esc(name)}</h1>
     ${s.description ? `<p class="desc">${esc(s.description)}</p>` : ""}
     <p class="extract">${esc(disamb ? "This name can mean several things. Try a more exact search." : s.extract)}</p>
-    <p class="readon"><b>Read more</b><span id="readon"><a href="${esc(s.content_urls?.desktop?.page)}" ${ext}>Wikipedia</a><a href="${ROOT}?t=${encodeURIComponent(name)}&stay">Myriad's general page</a></span></p>
+    <p class="readon"><b>Read more</b><span id="readon"><a href="${esc(s.content_urls?.desktop?.page)}" ${ext}>Wikipedia</a></span></p>
     ${otherLinks.length ? `<p class="others">Did you mean: ${otherLinks.map(o => `<a href="${here(o)}">${esc(o)}</a>`).join(" · ")}</p>` : ""}`;
   const thumb = s.thumbnail?.source, orig = s.originalimage;
   const img = thumb && orig?.width > 720 && /\/\d+px-/.test(thumb) ? thumb.replace(/\/\d+px-/, "/720px-") : orig?.source || thumb;
   if(img){ $("pic").src = img; $("plate").hidden = false; }
+  /* the library shelves (free books, the Met, the Archive, the Library of Congress) close every page, as on Myriad's front page */
+  if(!disamb) Myriad.shelves?.render($("cshelves"), {title: name, description: s.description, short: name.replace(/ \(.*\)$/, "")});
   if(!s.wikibase_item || disamb) return;
   let e;
   try { e = await entity(s.wikibase_item); } catch(err){ return; }
@@ -521,7 +535,8 @@ async function filmPage(ctx){
 /* ---------- a movement or genre: its filmmakers and its films ---------- */
 async function collectionPage(ctx){
   const {id, name} = ctx;
-  $("views").innerHTML = section("s-career", "Over the years", "Films a year among its best known — point at a bar to see which")
+  $("views").innerHTML = section("s-rel", "Related", "Where it came from, its offshoots, and what came after")
+    + section("s-career", "Over the years", "Films a year among its best known — point at a bar to see which")
     + section("s-makers", "Filmmakers", "The directors with the most films here")
     + section("s-films", "The films", "Its best-known films, in order");
   let rows;
@@ -534,6 +549,13 @@ async function collectionPage(ctx){
   }
   films.sort((a, b) => a.year - b.year);
   show("s-career", career(films));
+  relatives(id).then(rows => {
+    if(!alive(ctx) || !rows.length) return;
+    const ORDER = [["before", "Grew out of"], ["parent", "A kind of"], ["offshoot", "Offshoots"], ["after", "Came after"]];
+    const seen = new Set(), groups = ORDER.map(([k, t]) => [t, rows.filter(r => r.rel === k && !seen.has(r.x) && seen.add(r.x))
+      .map(r => ({name: label(r, "x") || artTitle(r.a), title: artTitle(r.a)})).filter(x => x.name).slice(0, 8)]).filter(([, l]) => l.length);
+    if(groups.length) show("s-rel", groups.map(([t, l]) => `<p class="rel-row"><b>${esc(t)}</b>${l.map(x => `<a class="tag-link" href="${esc(here(x.title))}">${esc(x.name)}</a>`).join("")}</p>`).join(""));
+  }).catch(() => {});
   const count = {}; films.forEach(f => f.dirs.forEach(d => count[d] = (count[d] || 0) + 1));
   const top = Object.entries(count).sort((a, b) => b[1] - a[1]).slice(0, 14);
   describe(top.map(([d]) => d)).then(info => {
@@ -559,7 +581,7 @@ function go(title, others=[], query=""){
   history.pushState({title, others, query}, "", "?t=" + encodeURIComponent(title));
   openTopic(title, others, query);
 }
-function landing(){ token++; document.body.classList.remove("on"); $("q").value = ""; document.title = "Cinema — Myriad"; }
+function landing(){ token++; Myriad.shelves?.clear(); document.body.classList.remove("on"); $("q").value = ""; document.title = "Cinema — Myriad"; }
 window.addEventListener("popstate", e => {
   if(e.state?.title) openTopic(e.state.title, e.state.others, e.state.query);
   else { const t = new URLSearchParams(location.search).get("t"); t ? openTopic(t) : landing(); }
