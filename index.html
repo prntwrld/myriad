@@ -262,7 +262,13 @@ async function met(q){
     m:[o.artistDisplayName,o.objectDate].filter(Boolean).join(" · "), img:o.primaryImageSmall}));
 }
 async function archive(q){
-  const j = await getJSON("https://archive.org/advancedsearch.php?fl[]=identifier&fl[]=title&fl[]=mediatype&fl[]=year&rows=6&output=json&q=" + encodeURIComponent('"' + q + '"'));
+  /* title matches inside the Archive's curated library collections (digitized library books, LibriVox
+     audiobooks, Prelinger films, old-time radio, NASA, Smithsonian…), most-downloaded first.
+     Searching everything returns personal uploads, favorites lists and some adult material. */
+  const words = q.replace(/["()\[\]{}:]/g, " ").trim();
+  const lib = "americana OR library_of_congress OR biodiversity OR fedlink OR prelinger OR librivoxaudio OR oldtimeradio OR feature_films OR nasa OR smithsonian OR gutenberg OR internetarchivebooks";
+  const j = await getJSON("https://archive.org/advancedsearch.php?fl[]=identifier&fl[]=title&fl[]=mediatype&fl[]=year&rows=6&sort[]=downloads+desc&output=json&q="
+    + encodeURIComponent(`title:("${words}") AND collection:(${lib}) AND NOT mediatype:collection`));
   return (j.response?.docs||[]).map(d => ({u:`https://archive.org/details/${d.identifier}`, t:d.title,
     m:[d.mediatype,d.year].filter(Boolean).join(" · "), img:`https://archive.org/services/img/${d.identifier}`}));
 }
