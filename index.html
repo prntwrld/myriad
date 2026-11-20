@@ -106,13 +106,13 @@
     <section class="shelf" id="mapbox" hidden><h2>On the map</h2><p class="sub" id="coords"></p><div id="map"></div></section>
     <section class="shelf best" id="best" hidden><h2>★ Best links</h2><p class="sub">Hand-picked by Myriad</p><div class="grid" id="best-grid"></div></section>
     <section class="shelf" id="relbox" hidden><h2>Related topics</h2><p class="sub">Keep exploring</p><div class="toc" id="rel"></div></section>
-    <section class="shelf"><h2>Free books</h2><p class="sub">Project Gutenberg</p><div class="grid" id="books"></div></section>
+    <section class="shelf"><h2>Free books</h2><p class="sub">Public-domain books, free to read — Open Library &amp; Project Gutenberg</p><div class="grid" id="books"></div></section>
     <section class="shelf"><h2>Museum</h2><p class="sub">The Metropolitan Museum of Art — open access</p><div class="grid" id="met"></div></section>
     <section class="shelf"><h2>Archive</h2><p class="sub">Internet Archive — books, film, audio</p><div class="grid" id="ia"></div></section>
   </div>
 </main>
 
-<footer>Myriad draws on free public collections: Wikipedia, Wikidata, OpenStreetMap, Project Gutenberg, The Met, and the Internet Archive. Text from Wikipedia is available under CC BY-SA.</footer>
+<footer>Myriad draws on free public collections: Wikipedia, Wikidata, OpenStreetMap, Open Library, Project Gutenberg, The Met, and the Internet Archive. Text from Wikipedia is available under CC BY-SA.</footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
@@ -234,8 +234,22 @@ async function facts(qid){
 }
 
 /* ---------- other libraries ---------- */
+/* Books: Open Library's public-domain scans (fast, free to read in full on the Internet Archive).
+   Gutendex (Project Gutenberg) is the backup, with a short time limit because it is often slow. */
 async function books(q){
-  const j = await getJSON("https://gutendex.com/books/?search=" + encodeURIComponent(q));
+  try { const r = await openLibrary(q); if(r.length) return r; } catch(e){}
+  return gutenberg(q);
+}
+async function openLibrary(q){
+  const words = q.replace(/[:"()\[\]{}]/g, " ");
+  const j = await getJSON("https://openlibrary.org/search.json?limit=6&fields=title,author_name,first_publish_year,cover_i,ia&q="
+    + encodeURIComponent(words + " AND ebook_access:public"), 10000);
+  return (j.docs||[]).filter(b => b.ia?.length).map(b => ({u:`https://archive.org/details/${b.ia[0]}`, t:b.title,
+    m:[(b.author_name||[])[0], b.first_publish_year].filter(Boolean).join(" · "),
+    img: b.cover_i ? `https://covers.openlibrary.org/b/id/${b.cover_i}-M.jpg` : ""}));
+}
+async function gutenberg(q){
+  const j = await getJSON("https://gutendex.com/books/?search=" + encodeURIComponent(q), 8000, 1);
   return (j.results||[]).slice(0,6).map(b => ({u:`https://www.gutenberg.org/ebooks/${b.id}`, t:b.title,
     m:(b.authors||[]).map(a=>a.name).join(", "), img:b.formats?.["image/jpeg"]}));
 }
