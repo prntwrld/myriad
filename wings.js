@@ -5,7 +5,6 @@
 const {ROOT, esc} = window.Myriad;
 const $ = id => document.getElementById(id);
 const ext = `target="_blank" rel="noopener"`;
-const topic = t => `${ROOT}?t=${encodeURIComponent(t)}`;
 
 const PAGES = {
   "field-guide": {
@@ -47,13 +46,15 @@ const PAGES = {
       watch:[["Kanopy","https://www.kanopy.com/en/search?query=godard"],["Letterboxd","https://letterboxd.com/director/jean-luc-godard/"],
         ["JustWatch","https://www.justwatch.com/us/search?q=godard"],["MUBI","https://mubi.com/en/cast/jean-luc-godard"],
         ["Internet Archive","https://archive.org/search?query=godard&and%5B%5D=mediatype%3A%22movies%22"]]},
+    explore: {label:"Movements", sub:"Open one to see its filmmakers and films",
+      items:["French New Wave","Italian neorealism","German Expressionism","New Hollywood","Japanese New Wave","Cinema Novo","Soviet montage theory","Dogme 95","Film noir","Poetic realism"]},
     plan: [
-      ["Filmography","Every film on a poster wall in order, with years, from TMDB and Wikidata."],
-      ["Collaborators","The people they kept working with — actors, cinematographers, writers — drawn as a web."],
-      ["Where to watch","Kanopy (free with a library card), the Criterion Channel, MUBI, rental, and free public-domain prints."],
+      ["Career","A filmmaker's films a year, as directing, writing, acting or shooting."],
+      ["Filmography","Every film on a poster wall, decade by decade."],
+      ["Collaborators","The people they kept working with, drawn as a web — line weight is films shared."],
+      ["Where to watch","Kanopy (free with a library card), the Criterion Channel, JustWatch, and free films on the Internet Archive — some play right on the page."],
       ["Movements & influence","The movement they belong to, who they learned from, and who learned from them."],
-      ["Stills & posters","Frames, posters and portraits from the open archives."],
-      ["Criticism","The essential reviews and essays, and books about the work."]],
+      ["Cast, crew & images","For a film: who was in it, who made it, more by the director, and stills from Commons."]],
     rooms: {
       "Watch": [
         {t:"Kanopy", u:"https://www.kanopy.com", why:"Free with many public library and university cards."},
@@ -188,12 +189,14 @@ const PAGES = {
 };
 
 const id = document.body.dataset.wing, P = PAGES[id], W = window.Myriad.WINGS.find(w => w.id === id);
+/* a wing with its own topic pages keeps its links inside the wing; the others open Myriad's main page */
+const topic = t => W.ready ? `./?t=${encodeURIComponent(t)}` : `${ROOT}?t=${encodeURIComponent(t)}`;
 document.title = `${W.name} — Myriad`;
 $("tag").textContent = P.tag;
 $("q").placeholder = P.placeholder;
 $("chips").innerHTML = P.chips.map(t => `<a href="${topic(t)}">${esc(t)}</a>`).join("");
 /* for now a wing's search opens the topic on Myriad's main page, which links back to the wing */
-$("f").addEventListener("submit", e => { e.preventDefault(); const q = $("q").value.trim(); if(q) location.href = `${ROOT}?q=${encodeURIComponent(q)}`; });
+if(!W.ready) $("f").addEventListener("submit", e => { e.preventDefault(); const q = $("q").value.trim(); if(q) location.href = `${ROOT}?q=${encodeURIComponent(q)}`; });
 
 /* the featured shelf: covers come from each Wikipedia article's lead image (posters, album covers, photos) */
 const F = P.feature, items = F.items.map(x => typeof x === "string" ? {t:x} : x);
@@ -205,7 +208,11 @@ $("main").innerHTML = `
     <div class="row" id="feature">${items.map(card).join("")}</div>
     ${F.watch ? `<p class="watch"><b>Where to watch</b>${F.watch.map(([t,u]) => `<a href="${esc(u)}" ${ext}>${esc(t)}</a>`).join("")}</p>` : ""}
   </section>
-  <section class="section"><h2 class="label">Inside ${/^[AEIOU]/.test(W.name) ? "an" : "a"} ${esc(W.name)} page</h2><p class="sub">What every topic in this wing will show — the plan, being built one wing at a time</p>
+  ${P.explore ? `<section class="section"><h2 class="label">${esc(P.explore.label)}</h2><p class="sub">${esc(P.explore.sub)}</p>
+    <div class="toc">${P.explore.items.map(t => `<a class="tag-link" href="${topic(t)}">${esc(t)}</a>`).join("")}</div></section>` : ""}
+  <section class="section"><h2 class="label">Inside ${/^[AEIOU]/.test(W.name) ? "an" : "a"} ${esc(W.name)} page</h2><p class="sub">${W.ready
+      ? "What a topic in this wing shows"
+      : "What every topic in this wing will show — the plan, being built one wing at a time"}</p>
     <ol class="plan">${P.plan.map(([t,d]) => `<li><b>${esc(t)}</b><span>${esc(d)}</span></li>`).join("")}</ol></section>
   <section class="section"><h2 class="label">Rooms</h2><p class="sub">Hand-picked places to go next</p>
     <div class="room">${Object.entries(P.rooms).map(([n, links]) => `<div><h3>${esc(n)}</h3><ul>${links.map(l =>

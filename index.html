@@ -588,7 +588,7 @@ async function openTopic(title, others=[], query=""){
       document.body.dataset.wing = wings[0].id;
       const at = $("lead").querySelector(".desc") || $("lead").querySelector("h1");
       at.insertAdjacentHTML("afterend", `<p class="in-wings">${wings.map(w =>
-        `<a href="${w.id}/" style="--c:var(--c-${w.id})"><i aria-hidden="true"></i>${esc(w.name)}</a>`).join("")}</p>`);
+        `<a href="${w.ready ? Myriad.topicIn(w, name) : w.id + "/"}" style="--c:var(--c-${w.id})"><i aria-hidden="true"></i>${esc(w.name)}</a>`).join("")}</p>`);
     }
     const {read, refs} = sources(e, name);
     $("readon").insertAdjacentHTML("beforeend", read.map(r => `<a href="${esc(r.u)}" ${ext}>${esc(r.t)}</a>`).join(""));
@@ -680,7 +680,7 @@ document.addEventListener("click", e => {
 $("chips").innerHTML = SUGGEST.map(t => `<a data-go="${esc(t)}">${esc(t)}</a>`).join("");
 $("wingcards").innerHTML = Myriad.WINGS.map(w => `<div class="wing-card" style="--c:var(--c-${w.id})">
   <a class="wc-name" href="${w.id}/"><i aria-hidden="true"></i>${esc(w.name)}</a><p>${esc(w.line)}</p>
-  <p class="wc-try">${w.try.map(t => `<a data-go="${esc(t)}">${esc(t.replace(/ \(.*\)$/,""))}</a>`).join("")}</p></div>`).join("");
+  <p class="wc-try">${w.try.map(t => `<a ${w.ready ? `href="${esc(Myriad.topicIn(w, t))}"` : `data-go="${esc(t)}"`}>${esc(t.replace(/ \(.*\)$/,""))}</a>`).join("")}</p></div>`).join("");
 $("room").innerHTML = Object.entries(BEST).map(([n, links]) => `<div><h3>${esc(n)}</h3><ul>${links.map(l =>
   `<li><a href="${esc(l.u)}" ${ext}>${esc(l.t)}</a><span>${esc(l.why)}</span></li>`).join("")}</ul></div>`).join("");
 

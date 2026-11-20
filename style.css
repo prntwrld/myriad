@@ -286,6 +286,111 @@ body[data-wing] .masthead .logo{font-size:clamp(40px,7.5vw,76px)}
 }
 
 /* ======================================================================
+   Cinema topic pages: the career chart, the poster wall, the collaborator web, faces, the player.
+   ====================================================================== */
+#ctopic{display:none} body.on #ctopic{display:block} body.on #main{display:none}
+.plate.is-poster .pic{max-height:none;object-fit:contain;background:transparent}
+.minor{font:600 11px/1.2 Cinzel,serif;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin:26px 0 12px}
+
+/* role tabs */
+.tabs{display:flex;flex-wrap:wrap;gap:0;margin:0 0 20px;border-bottom:1px solid var(--line)}
+.tabs button{background:transparent;color:var(--muted);border:0;border-bottom:2px solid transparent;margin-bottom:-1px;
+  min-height:40px;padding:0 16px 0 0;margin-right:18px;font:600 11.5px/1 Cinzel,serif;letter-spacing:.16em}
+.tabs button span{font:400 15px/1 "EB Garamond",serif;letter-spacing:0;margin-left:4px;color:var(--muted)}
+.tabs button:hover{background:transparent;color:var(--ink)}
+.tabs button[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+
+/* the career chart: one thin bar per year, rounded at the top, anchored to the baseline */
+.career{max-width:100%}
+.career .bars{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));align-items:end;height:120px;
+  border-bottom:1px solid var(--rule)}
+.career .yr{height:100%;display:flex;align-items:flex-end;justify-content:center;padding:0 1px;cursor:default}
+.career .yr i{display:block;width:100%;max-width:14px;background:var(--accent);border-radius:4px 4px 0 0;transition:opacity .15s}
+.career .bars:hover .yr i{opacity:.45}
+.career .bars .yr:hover i{opacity:1}
+.career .axis{position:relative;height:22px;font-size:14px;color:var(--muted);font-variant-numeric:lining-nums tabular-nums}
+.career .axis span{position:absolute;top:4px;left:calc((var(--i) + .5) / var(--n) * 100%);transform:translateX(-50%)}
+.chart-note{color:var(--muted);font-style:italic;font-size:15px;margin:10px 0 0}
+.tip{position:fixed;z-index:50;pointer-events:none;max-width:280px;background:var(--paper);color:var(--ink);border:1px solid var(--rule);
+  padding:8px 12px;font-size:15px;line-height:1.35;box-shadow:0 6px 18px var(--shadow)}
+.tip b{display:block;font:600 12px/1.4 Cinzel,serif;letter-spacing:.14em;margin-bottom:3px}
+.tip span{display:block}
+.tip .none{color:var(--muted);font-style:italic}
+
+/* the poster wall, decade by decade */
+.decade{display:grid;grid-template-columns:5.5em minmax(0,1fr);gap:20px;padding:18px 0;border-top:1px solid var(--line)}
+.decade:first-child{border-top:0;padding-top:4px}
+.decade h3{font:600 15px/1 Cinzel,serif;letter-spacing:.1em;margin:6px 0 0;color:var(--accent);font-variant-numeric:lining-nums}
+.wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(124px,1fr));gap:22px 18px}
+.wall.strip{display:flex;overflow-x:auto;gap:18px;padding-bottom:6px;scrollbar-width:thin}
+.wall.strip .poster{flex:0 0 132px}
+.poster{text-decoration:none;color:var(--ink)}
+.poster:hover{color:var(--ink)}
+.poster .frame{aspect-ratio:2/3;background:var(--line);overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.15),0 6px 14px -8px var(--shadow);
+  transition:transform .2s ease}
+.poster:hover .frame{transform:translateY(-4px)}
+.poster .frame img{width:100%;height:100%;object-fit:cover;display:block}
+.poster .cover{width:100%;height:100%;display:-webkit-box}
+.poster .cap,.face .cap{padding-top:8px;line-height:1.25}
+.poster .t,.face .t{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:15.5px;font-weight:500}
+.poster .y,.face .y{display:block;color:var(--muted);font-size:14px;font-variant:small-caps;letter-spacing:.03em;font-variant-numeric:lining-nums}
+
+/* people: portraits in black and white until you point at them */
+.faces{display:flex;overflow-x:auto;gap:18px;padding-bottom:6px;scrollbar-width:thin}
+.face{flex:0 0 116px;text-decoration:none;color:var(--ink)}
+.face:hover{color:var(--ink)}
+.face .ph{aspect-ratio:4/5;background:var(--soft);overflow:hidden;display:grid;place-items:center;border:1px solid var(--line)}
+.face .ph img{width:100%;height:100%;object-fit:cover;display:block;filter:grayscale(1) contrast(1.05);transition:filter .3s}
+.face:hover .ph img{filter:none}
+.face .initials{font:600 26px/1 Cinzel,serif;color:var(--muted);letter-spacing:.06em}
+.movements{display:flex;flex-wrap:wrap;gap:8px;margin:0}
+
+/* the collaborator web, with a ranked list beside it */
+.collab{display:grid;gap:28px}
+.collab .web{max-width:900px;margin:0 auto}
+.collab .ranked{columns:2 300px;column-gap:44px}
+.ranked li{break-inside:avoid}
+.web{width:100%;height:auto;display:block;overflow:visible}
+.web line{stroke:var(--accent);stroke-opacity:.38;stroke-linecap:round}
+.web .disc{fill:var(--paper);stroke:var(--line)}
+.web image{filter:grayscale(1) contrast(1.05)}
+.web .node:hover image{filter:none}
+.web .node:hover .disc{stroke:var(--accent);stroke-width:2}
+.web text{text-anchor:middle;fill:var(--ink);font-family:"EB Garamond",serif}
+.web .nm{font-size:16px;font-weight:500}
+.web .ct{font-size:13px;fill:var(--muted);font-style:italic}
+.web .ini{font:600 15px Cinzel,serif;fill:var(--muted)}
+.ranked{list-style:none;margin:0;padding:0;counter-reset:rk;border-top:1px solid var(--rule)}
+.ranked li{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;padding:6px 0;border-bottom:1px solid var(--line);font-size:16.5px;line-height:1.3}
+.ranked .role{grid-column:1;color:var(--muted);font-size:14px;font-style:italic}
+.ranked .n{grid-column:2;grid-row:1 / 3;align-self:center;font:600 14px/1 Cinzel,serif;color:var(--accent);font-variant-numeric:lining-nums}
+
+.wall-more{margin:18px 0 0;padding-left:calc(5.5em + 20px)}
+.linkish{background:none;border:0;padding:0;min-height:0;color:var(--accent);font:inherit;font-size:17px;letter-spacing:0;text-transform:none;
+  text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;cursor:pointer}
+.linkish:hover{background:none;color:var(--accent-2)}
+@media (max-width:760px){ .wall-more{padding-left:0} }
+/* a film that plays on the page */
+.player{position:relative;aspect-ratio:4/3;max-width:820px;background:#000;border:1px solid var(--line)}
+.player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+
+/* images from Commons */
+.stills{columns:4 200px;column-gap:12px}
+.stills a{display:block;margin:0 0 12px;break-inside:avoid}
+.stills img{width:100%;display:block;border:1px solid var(--line)}
+.row.archive{--h:170px}
+.archive .obj img{max-height:calc(var(--h) - 12px)}
+
+@media (max-width:760px){
+  .decade{grid-template-columns:minmax(0,1fr);gap:10px}
+  .wall{grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:16px 12px}
+  .poster .t{font-size:14.5px}
+  .web .nm{font-size:22px} .web .ct{font-size:18px}
+  .face{flex-basis:100px}
+  .career .bars{height:96px}
+}
+
+/* ======================================================================
    Y2K — an optional third theme (header switch: light → dark → Y2K).
    Early-2000s web: glossy aqua gel, chrome, bubbly buttons, pixel sparkles,
    a starry grid sky. Every rule is nested under the one selector below.
@@ -463,3 +568,22 @@ body[data-wing] .masthead .logo{font-size:clamp(40px,7.5vw,76px)}
   & .apod-fig b{font:bold 24px/1.2 var(--y-font)}
   & body[data-wing] .masthead .logo{font-size:clamp(40px,7vw,72px)}
 }
+
+/* Y2K versions of the Cinema pieces */
+:root[data-theme="y2k"]{
+  & .tabs{border-bottom:0;gap:8px}
+  & .tabs button{font:bold 13px/1 var(--y-font);letter-spacing:.02em;text-transform:none;color:#1a3c8f;padding:0 14px;margin:0;
+    border:1px solid #9db6e8;border-radius:999px;background:linear-gradient(#ffffff,#dbe8ff);text-shadow:none}
+  & .tabs button[aria-pressed="true"]{color:#fff;background:var(--aqua);border-color:#0b5bc4;text-shadow:0 1px 1px rgba(0,40,110,.6)}
+  & .tabs button span{font:inherit;color:inherit;opacity:.8}
+  & .career .yr i{background:linear-gradient(#8fd4ff,#1477e6);border-radius:6px 6px 0 0}
+  & .tip{border-radius:12px;border:1px solid #9db6e8}
+  & .tip b{font:bold 13px/1.4 var(--y-font)}
+  & .decade h3{font:bold 16px/1 var(--y-pixel);color:#c8217a}
+  & .poster .frame{border-radius:8px}
+  & .face .ph{border-radius:12px}
+  & .minor{font:bold 11px/1.2 var(--y-pixel);letter-spacing:.12em;color:#c8217a}
+  & .ranked .n{font:bold 14px/1 var(--y-pixel);color:#c8217a}
+  & .poster .t,& .face .t{font-size:14px;font-weight:bold}
+}
+:root[data-theme="y2k"] .linkish{background:none;border:0;box-shadow:none;border-radius:0;color:var(--accent);text-shadow:none;font:bold 15px var(--y-font)}

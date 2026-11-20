@@ -7,7 +7,7 @@ const ROOT = new URL(".", document.currentScript.src).href;
 const WINGS = [
   {id:"field-guide", name:"Field Guide", line:"Birds, beasts and plants: how to know them, where to find them, what they sound like.",
     try:["Steller's jay","Western redcedar","Orca"]},
-  {id:"cinema", name:"Cinema", line:"Films and filmmakers: filmographies, collaborators, movements, and where to watch.",
+  {id:"cinema", name:"Cinema", ready:true, line:"Films and filmmakers: filmographies, collaborators, movements, and where to watch.",
     try:["Jean-Luc Godard","Breathless (1960 film)","French New Wave"]},
   {id:"metronome", name:"Metronome", line:"Music to discover: records, artists, scenes, and what to play next.",
     try:["Kind of Blue","Joni Mitchell","Krautrock"]},
@@ -41,6 +41,8 @@ const RULES = {
   "arcade": c => has(c,"P1733") || has(c,"P1933") || has(c,"P2816") ||
     any(vals(c,"P31"), ["Q7889","Q7058673","Q8076","Q659563"])
 };
+/* a link to a topic inside a wing that has its own topic pages, or else on the main page */
+const topicIn = (w, t) => w.ready ? `${ROOT}${w.id}/?t=${encodeURIComponent(t)}` : `${ROOT}?t=${encodeURIComponent(t)}`;
 const wingsFor = claims => WINGS.filter(w => { try { return RULES[w.id](claims || {}); } catch(e){ return false; } });
 
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -75,5 +77,5 @@ document.addEventListener("DOMContentLoaded", () => {
   labelTheme(btn);
 });
 
-window.Myriad = {ROOT, WINGS, TELESCOPE, wingsFor, esc};
+window.Myriad = {ROOT, WINGS, TELESCOPE, wingsFor, topicIn, esc};
 }
