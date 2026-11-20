@@ -158,7 +158,13 @@ const SKIP_SECTIONS = /^(see also|references|external links|notes|further readin
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const strip = h => { const d = document.createElement("div"); d.innerHTML = h; return d.textContent; };
-const getJSON = async url => { const r = await fetch(url); if(!r.ok) throw new Error(r.status); return r.json(); };
+/* fetch JSON with a time limit, so a slow library can't leave a shelf stuck on "Searching…",
+   and one polite retry if a service says "too many requests" (HTTP 429) */
+const getJSON = async (url, ms=15000, tries=2) => {
+  const r = await fetch(url, {signal: AbortSignal.timeout(ms)});
+  if(r.status === 429 && tries > 1){ await new Promise(ok => setTimeout(ok, 1500)); return getJSON(url, ms, tries-1); }
+  if(!r.ok) throw new Error(r.status); return r.json();
+};
 const W = "https://en.wikipedia.org/w/api.php?format=json&origin=*&";
 const card = ({u,t,m,d,img}) => `<a class="card" href="${esc(u)}" target="_blank" rel="noopener">
   ${img?`<img loading="lazy" src="${esc(img)}" alt="" onerror="this.remove()">`:""}
@@ -263,7 +269,13 @@ async function openTopic(title, others=[], query=""){
   ["books","met","ia"].forEach(id => $(id).innerHTML = `<p class="status">Searching…</p>`);
 
   let s;
-  try { s = await summary(title); } catch(e){ if(my===token) $("lead").innerHTML = `<p class="status">Couldn't load that topic. Try another search.</p>`; return; }
+  try { s = await summary(title); } catch(e){
+    if(my===token){
+      $("lead").innerHTML = `<p class="status">Couldn't load that topic. Try again in a moment, or try another search.</p>`;
+      ["books","met","ia"].forEach(id => $(id).innerHTML = "");
+    }
+    return;
+  }
   if(my !== token) return;
   const name = s.title || title, short = (s.titles?.normalized || name).replace(/ \(.*\)$/,"");
   document.title = name + " — Myriad";
