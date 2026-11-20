@@ -97,6 +97,33 @@ const PAGES = {
     sources: "MusicBrainz, the Cover Art Archive, ListenBrainz, Wikidata, the Internet Archive"
   },
 
+  "gallery": {
+    tag: "A gallery of art and architecture — paintings, prints and buildings, the people who made them, and where to see them.",
+    placeholder: "A painting, an artist, a building — Hokusai, Fallingwater, Art Nouveau…",
+    chips: ["Hokusai","Hilma af Klint","Fallingwater","Zaha Hadid","Art Nouveau","Brutalist architecture"],
+    feature: {label:"A first walk through the gallery", sub:"Paintings and buildings — open any one", photos:true,
+      items:["The Great Wave off Kanagawa","Fallingwater","Las Meninas","Sagrada Família","Nighthawks","Villa Savoye","Girl with a Pearl Earring","Sydney Opera House","The Garden of Earthly Delights","Pantheon, Rome"]},
+    plan: [
+      ["Works","An artist's works on a wall in order, from the Art Institute of Chicago, the Cleveland Museum of Art and The Met."],
+      ["The big picture","A large, zoomable image of a single work, with what it is, when, and where it hangs."],
+      ["Buildings","Photographs, the architect, the style, the date, and a map — with others like it nearby."],
+      ["Lineage","Teachers and students, the movement, who it came from and where it went."],
+      ["Drift","From artist to movement to building to architect, one step at a time."],
+      ["Look by colour","Find works by their colour and their century."]],
+    rooms: {
+      "Museums with open collections": [
+        {t:"Art Institute of Chicago", u:"https://www.artic.edu/collection", why:"Thousands of public-domain works in high resolution."},
+        {t:"The Met Collection", u:"https://www.metmuseum.org/art/collection", why:"Over 400,000 open-access images."},
+        {t:"Rijksmuseum", u:"https://www.rijksmuseum.nl/en/collection", why:"Dutch masters, free to download and zoom."}],
+      "Learn to look": [
+        {t:"Smarthistory", u:"https://smarthistory.org", why:"Free, expert art history — videos and essays."},
+        {t:"Google Arts & Culture", u:"https://artsandculture.google.com", why:"Museums worldwide, zoomed to the brushstroke."}],
+      "Architecture": [
+        {t:"SAH Archipedia", u:"https://sah-archipedia.org", why:"Scholarly entries on thousands of American buildings."},
+        {t:"ArchDaily", u:"https://www.archdaily.com", why:"Today's architecture, with drawings and photographs."}]},
+    sources: "the Art Institute of Chicago, the Cleveland Museum of Art, The Met, Wikidata, Wikipedia, Wikimedia Commons"
+  },
+
   "observatory": {
     tag: "An observatory for everyone — planets, stars, missions, and what's up in tonight's sky.",
     placeholder: "A planet, a star, a mission — Jupiter, Betelgeuse, Cassini…",

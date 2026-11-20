@@ -10,10 +10,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<link rel="stylesheet" href="style.css?v=20261120c">
+<link rel="stylesheet" href="style.css?v=20261120d">
 </head>
 <body>
-<script src="site.js?v=20261120c"></script>
+<script src="site.js?v=20261120d"></script>
 <header class="wrap masthead">
   <a class="logo" id="logo" href="./">Myriad<span class="dot">.</span></a>
   <p class="tag">Clean topic pages from the world's open libraries. No ads, no clutter.</p>
@@ -33,6 +33,11 @@
       <h2 class="label">The wings</h2>
       <p class="sub">Rooms that go deeper on one kind of thing</p>
       <div class="wing-cards" id="wingcards"></div>
+    </section>
+    <section class="section" id="trailbox" hidden>
+      <h2 class="label">Your trail</h2>
+      <p class="sub">Where you've wandered lately, across Myriad — kept only in this browser</p>
+      <div id="trail"></div>
     </section>
     <section class="section">
       <h2 class="label">The reading room</h2>
@@ -63,6 +68,7 @@
 
 <footer class="wrap">Myriad draws on free public collections: Wikipedia, Wikidata, OpenStreetMap, Open Library, Project Gutenberg, The Met, the Internet Archive, and the Library of Congress. Text from Wikipedia is available under CC BY-SA.</footer>
 
+<script src="discover.js?v=20261120d"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 {
@@ -553,6 +559,7 @@ async function openTopic(title, others=[], query=""){
   }
   if(my !== token) return;
   const name = s.title || title, short = (s.titles?.normalized || name).replace(/ \(.*\)$/,"");
+  if(s.type !== "disambiguation") Myriad.discover?.trail.add({wing: "", title: name, name});
   document.title = name + " — Myriad";
   const disamb = s.type === "disambiguation";
   const otherLinks = disamb ? [] : others.filter(o => o !== title && o !== name).slice(0,5);
@@ -664,6 +671,7 @@ function go(title, others=[], query=""){
   openTopic(title, others, query);
 }
 function home(push=true){
+  showTrail();
   token++; locStop?.abort(); document.body.classList.remove("on"); delete document.body.dataset.wing; $("q").value = "";
   document.title = "Myriad — a myriad of info";
   if(push) history.pushState(null, "", location.pathname);
@@ -681,6 +689,9 @@ document.addEventListener("click", e => {
   const a = e.target.closest("[data-go]"); if(!a) return;
   e.preventDefault(); go(a.dataset.go);
 });
+/* the reader's trail across Myriad, on the front page */
+function showTrail(){ const h = Myriad.discover?.trail.html(18) || ""; $("trail").innerHTML = h; $("trailbox").hidden = !h; }
+showTrail();
 $("chips").innerHTML = SUGGEST.map(t => `<a data-go="${esc(t)}">${esc(t)}</a>`).join("");
 $("wingcards").innerHTML = Myriad.WINGS.map(w => `<div class="wing-card" style="--c:var(--c-${w.id})">
   <a class="wc-name" href="${w.id}/"><i aria-hidden="true"></i>${esc(w.name)}</a><p>${esc(w.line)}</p>

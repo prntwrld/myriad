@@ -7,9 +7,16 @@ Search anything and Myriad builds one page for it: a summary and picture, quick 
 Live at [prntwrld.github.io/myriad](https://prntwrld.github.io/myriad/)
 
 ## Wings
-Rooms that go deeper on one kind of thing, each with its own accent colour: **Field Guide** (nature), **Cinema**, **Metronome** (music), **Observatory** (space), **Academy** (research, including AI) and **Arcade** (video games). A topic page notices which wings it belongs to and links to them. Wing landing pages are drawn from the `PAGES` table in `wings.js`; the wing list, nav bar and theme switch live in `site.js`.
+Rooms that go deeper on one kind of thing, each with its own accent colour: **Field Guide** (nature), **Cinema**, **Metronome** (music), **Gallery** (art and architecture), **Observatory** (space), **Academy** (research, including AI) and **Arcade** (video games). A topic page notices which wings it belongs to and links to them. Wing landing pages are drawn from the `PAGES` table in `wings.js`; the wing list, nav bar and theme switch live in `site.js`.
 
 **Cinema** is the first wing with its own topic pages (`cinema/cinema.js`). A filmmaker gets a career chart, a poster wall, a collaborator web, where to watch, and movements and influences; a film gets its cast, crew, more by the director, and, when it's in the public domain, the film itself playing on the page; a movement gets its filmmakers and films. The data comes from Wikidata's query service, with posters from Wikipedia.
+
+## Discovery
+Myriad should let you find things you didn't know to look for. `discover.js` holds the pieces every wing shares: picks of the day that are the same for everyone and change at midnight, **Drift** (a walk from one thing to a connected thing, one step at a time, saying why), and **your trail** (what you've wandered through across Myriad, kept only in your browser).
+
+Cinema's front page (`cinema/landing.js`) uses them: a double feature of the day joined by a real connection, Drift through films and the people who made them, on this day, a door by decade and country, and Shuffle. Every Cinema page has a *Drift from here* link.
+
+On this day and the door use `cinema/data.json`, thousands of well-known films and film people made ahead of time by `tools/build_cinema_data.py` (run it from the repository root; it takes about 15 minutes, pausing between queries to be polite to Wikidata). Until that file exists, the page uses a built-in canon of well-known films and leaves those two sections out.
 
 ## Sources
 - [Wikipedia](https://www.wikipedia.org) and [Wikidata](https://www.wikidata.org)
