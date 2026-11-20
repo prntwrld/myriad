@@ -98,7 +98,7 @@
     <div class="hero">
       <article class="lead" id="lead"><p class="status">Looking it up…</p></article>
       <aside class="side">
-        <img class="pic" id="pic" alt="" hidden>
+        <img class="pic" id="pic" alt="" hidden onerror="this.hidden=true">
         <div class="facts" id="facts" hidden><h2>Quick facts</h2><dl id="factlist"></dl></div>
       </aside>
     </div>
@@ -306,8 +306,10 @@ async function openTopic(title, others=[], query=""){
     <p class="extract">${esc(disamb ? "This name can mean several things. Pick one below." : s.extract)}</p>
     <a class="more" href="${esc(s.content_urls?.desktop?.page)}" target="_blank" rel="noopener">Read the full article on Wikipedia →</a>
     ${otherLinks.length ? `<p class="others">Did you mean: ${otherLinks.map(o => `<a data-t="${esc(o)}">${esc(o)}</a>`).join(" · ")}</p>` : ""}`;
-  const img = s.originalimage?.source || s.thumbnail?.source;
-  if(img){ $("pic").src = s.thumbnail?.source && s.thumbnail.width >= 600 ? s.thumbnail.source : img; $("pic").hidden = false; }
+  /* ask for a 960px copy rather than the full original (which can be several MB) */
+  const thumb = s.thumbnail?.source, orig = s.originalimage;
+  const img = thumb && orig?.width > 960 && /\/\d+px-/.test(thumb) ? thumb.replace(/\/\d+px-/, "/960px-") : orig?.source || thumb;
+  if(img){ $("pic").src = img; $("pic").hidden = false; }
 
   if(s.coordinates){
     const {lat, lon} = s.coordinates;
