@@ -316,9 +316,9 @@ async function speciesPage(ctx){
   const me = node(t), group = GROUP[t.iconic_taxon_name] || "species", month = thisMonth();
   $("views").innerHTML = section("s-photos", "Photographs", "From iNaturalist's observers")
     + section("s-song", "Songs & calls", "Recordings to play here — press one, or play them all")
-    + section("s-marks", "Field marks", "What to look for")
+    /* field marks and range & season share a row: the words on the left, the map and the months on the right */
+    + `<div class="fg-pair">${section("s-marks", "Field marks", "What to look for")}${section("s-range", "Range & season", "")}</div>`
     + section("s-alike", "Look-alikes", "What it's most often mistaken for on iNaturalist, side by side")
-    + section("s-range", "Range & season", "")
     + section("s-near", "Seen near you", "Recent sightings around where you are")
     + section("s-tree", "Before & after", "Its place in the tree of life: the family above it, its closest relatives beside it")
     + section("s-also", `Also out in ${MONTHS[month - 1]}`, "");
@@ -470,7 +470,12 @@ function rangeAndSeason(ctx, natFilter, gbifKey, sci){
     L.tileLayer(`https://api.gbif.org/v2/map/occurrence/density/{z}/{x}/{y}@1x.png?taxonKey=${key}&bin=hex&hexPerTile=48&style=green2.poly`,
       {maxZoom: 12, opacity: .85, attribution: `<a href="https://www.gbif.org/species/${key}" target="_blank" rel="noopener">GBIF</a>`}).addTo(map);
     const lat = [Math.max(-70, caps.minLat), Math.min(80, caps.maxLat)], lng = [caps.minLng, caps.maxLng];
-    if(lng[1] - lng[0] > 300) map.setView([25, -100], 1); else map.fitBounds([[lat[0], lng[0]], [lat[1], lng[1]]], {padding: [16, 16], maxZoom: 7});
+    const fit = () => lng[1] - lng[0] > 300 ? map.setView([25, -100], 1) : map.fitBounds([[lat[0], lng[0]], [lat[1], lng[1]]], {padding: [16, 16], maxZoom: 7});
+    fit();
+    /* the map's box can change size after it's drawn (the field marks arriving beside it): redraw and refit, once things settle */
+    let w = $("fg-map").clientWidth, moved = false;
+    map.once("movestart zoomstart", () => moved = true);
+    new ResizeObserver(() => { const nw = $("fg-map")?.clientWidth; if(!nw || nw === w) return; w = nw; map.invalidateSize(); if(!moved) fit(); }).observe($("fg-map"));
     $("fg-map-note").innerHTML = `${num(caps.total)} records on <a href="https://www.gbif.org/species/${key}" ${ext}>GBIF</a> — the darker the hexagon, the more`;
   })();
 }
