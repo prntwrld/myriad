@@ -134,11 +134,14 @@ main{padding-bottom:24px}
 .timeline .what{position:relative;padding:7px 0 7px 26px;border-left:1px solid var(--accent);font-size:18px;line-height:1.4}
 .timeline .what::before{content:"";position:absolute;left:-5px;top:calc(7px + .45em);width:9px;height:9px;
   background:var(--bg);border:1px solid var(--accent);transform:rotate(45deg)}
-.timeline .mile .what::before,.timeline li:has(.tl-tag) .what::before{background:var(--accent)}
+.timeline .mile .what::before{background:var(--accent)}
 .timeline .mile .what{font-weight:500}
 .timeline .what a{cursor:pointer}
 .timeline .tl-tag{font:600 11px/1 Cinzel,serif;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-left:.8em;white-space:nowrap}
 .timeline .until{display:block;color:var(--muted);font-style:italic;font-size:15px}
+.timeline .note{display:block;color:var(--muted);font-weight:400;font-size:16px;line-height:1.45;margin-top:3px;max-width:62ch}
+.timeline .note a{font-size:14px;white-space:nowrap}
+.timeline .note a::after{content:" →"}
 
 /* ---------- shelves: objects stand on a plank, placards beneath ---------- */
 .shelf{--h:210px}
@@ -302,11 +305,12 @@ footer::before{content:"";display:block;border-top:3px double var(--rule);margin
   & .timeline .what{font-size:16px;border-left:3px solid #9db6e8}
   & .timeline .what::before{left:-8px;width:13px;height:13px;border-radius:50%;transform:none;border:1px solid #0b5bc4;
     background:radial-gradient(circle at 35% 30%,#fff 0 20%,#5cbcff 45%,#1477e6)}
-  & .timeline .mile .what::before,& .timeline li:has(.tl-tag) .what::before{border-color:#b0145f;
+  & .timeline .mile .what::before{border-color:#b0145f;
     background:radial-gradient(circle at 35% 30%,#fff 0 20%,#ff7cc4 45%,#d62a86)}
   & .timeline .tl-tag{font:bold 10px/1 var(--y-pixel);letter-spacing:.1em;color:#fff;background:linear-gradient(#ff8ccd,#d62a86);
     border-radius:999px;padding:3px 8px}
   & .timeline .until{font-style:normal;font-size:13px}
+  & .timeline .note{font-size:14px}
 
   & #map{border:3px solid #fff;border-radius:16px;filter:saturate(1.15);box-shadow:0 4px 14px rgba(30,60,140,.2)}
 
