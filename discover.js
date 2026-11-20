@@ -29,13 +29,15 @@ const daily = {
 };
 
 /* ---------- the trail: what you've looked at, across all of Myriad ---------- */
-const TRAIL = "myriad-trail", TRAIL_MAX = 40;
+const TRAIL = "myriad-trail", TRAIL_MAX = 60;
 const trail = {
   count: () => store.get(TRAIL, []).length,
   add(item){ /* {wing, title, name} */
     if(!item?.title) return;
     const list = store.get(TRAIL, []).filter(x => !(x.title === item.title && x.wing === item.wing));
-    list.unshift({...item, at: Date.now()}); store.set(TRAIL, list.slice(0, TRAIL_MAX));
+    /* keep a picture already known for it if this visit didn't bring one */
+    const old = store.get(TRAIL, []).find(x => x.title === item.title && x.wing === item.wing);
+    list.unshift({...item, img: item.img || old?.img || "", at: Date.now()}); store.set(TRAIL, list.slice(0, TRAIL_MAX));
   },
   list: () => store.get(TRAIL, []),
   clear: () => store.set(TRAIL, []),
@@ -44,7 +46,10 @@ const trail = {
     return `<ol class="trail">${list.map(x => {
       const w = WINGS.find(w => w.id === x.wing);
       const href = w ? Myriad.topicIn(w, x.title) : `${Myriad.ROOT}?t=${encodeURIComponent(x.title)}`;
-      return `<li><a href="${esc(href)}"${w ? ` style="--c:var(--c-${w.id})"` : ""}>${w ? `<i aria-hidden="true"></i>` : ""}${esc(x.name || x.title)}</a></li>`;
+      const nm = x.name || x.title;
+      return `<li><a href="${esc(href)}"${w ? ` style="--c:var(--c-${w.id})"` : ""}><span class="tr-img">${x.img
+        ? `<img src="${esc(x.img)}" alt="" loading="lazy">` : `<b>${esc(nm.split(/\s+/).map(v => v[0]).slice(0, 2).join(""))}</b>`}</span>
+        <span class="tr-name">${w ? `<i aria-hidden="true"></i>` : ""}${esc(nm)}</span></a></li>`;
     }).join("")}</ol>`;
   }
 };

@@ -127,14 +127,14 @@ async function wellKnown(j, r = Math.random){
 
 /* ---------- Tonight's double feature: a film of the day, and another that shares someone with it ---------- */
 async function doubleFeature(j){
-  const cached = D.daily.get("cinema-double");
+  const cached = D.daily.get("cinema-double-v2");
   if(cached) return cached;
   const r = D.rng("cinema-double-" + D.today());
   for(let tries = 0; tries < 8; tries++){
     const a = await wellKnown(j, r);
-    const rows = await C.sparql(`SELECT ?b ?r ?x ?xLabel (MAX(?sl) AS ?pop) (SAMPLE(?art) AS ?ab) WHERE {
+    const rows = await C.sparql(`SELECT ?b ?r ?x ?xLabel (MAX(?sl) AS ?pop) (SAMPLE(?art) AS ?ab) (SAMPLE(?xi) AS ?xpic) WHERE {
       VALUES (?p ?r) { (wdt:P344 "dop") (wdt:P86 "mus") (wdt:P58 "wri") (wdt:P161 "cast") }
-      wd:${a.id} ?p ?x . ?b ?p ?x . FILTER(?b != wd:${a.id}) FILTER EXISTS { ?b wdt:P31/wdt:P279? ${FILM} }
+      wd:${a.id} ?p ?x . ?b ?p ?x . OPTIONAL { ?x wdt:P18 ?xi } FILTER(?b != wd:${a.id}) FILTER EXISTS { ?b wdt:P31/wdt:P279? ${FILM} }
       FILTER NOT EXISTS { wd:${a.id} wdt:P57 ?d . ?b wdt:P57 ?d }
       ?b wikibase:sitelinks ?sl . FILTER(?sl > 15) ?art schema:about ?b ; schema:isPartOf <https://en.wikipedia.org/> .
       SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
@@ -144,14 +144,16 @@ async function doubleFeature(j){
     const rank = {dop: 0, mus: 1, wri: 2, cast: 3};
     const best = rows.filter(x => C.label(x, "x") && (tries >= 5 || x.r !== "cast")).sort((x, y) => rank[x.r] - rank[y.r]);
     if(!best.length) continue;
+    /* the partner should be known enough to be worth an evening (not a forgotten B-movie), and the person
+       who joins them should have a face to show; loosen those only if nothing fits */
     const tier = best.filter(x => x.r === best[0].r);
-    const fresh = tier.filter(x => +x.pop >= 15 && +x.pop <= 60);
-    const from = fresh.length ? fresh : tier;
+    const known = x => +x.pop >= 30;
+    const from = [tier.filter(x => known(x) && x.xpic), best.filter(x => known(x) && x.xpic), tier.filter(known), tier].find(l => l.length);
     const b = from[Math.floor(r() * Math.min(from.length, 8))];
     const film = j?.films.find(f => f.id === C.qid(b.b));
     const pair = {a, b: {id: C.qid(b.b), enwiki: C.artTitle(b.ab), name: strip(C.artTitle(b.ab)), year: film?.year || "", archive: film?.archive || ""},
       why: ROLES[b.r].why, role: b.r, who: C.label(b, "x"), whoId: C.qid(b.x)};
-    D.daily.set("cinema-double", pair);
+    D.daily.set("cinema-double-v2", pair);
     return pair;
   }
   return null;
@@ -168,7 +170,7 @@ async function about(pair){
       OPTIONAL { wd:${pair.whoId} wdt:P18 ?i }
       OPTIONAL { wd:${pair.a.id} wdt:P577 ?da } OPTIONAL { wd:${pair.b.id} wdt:P577 ?db } }`);
     pair.info = {desc: r?.desc || "", img: r?.img ? C.commons(r.img, 300) : "", ya: +r?.ya || 0, yb: +r?.yb || 0};
-    D.daily.set("cinema-double", pair);
+    D.daily.set("cinema-double-v2", pair);
   } catch(e){ pair.info = {}; }
 }
 
