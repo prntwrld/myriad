@@ -236,13 +236,22 @@ function shell(){
     <div id="views"></div><div id="fshelves"></div>`;
 }
 const alive = ctx => ctx.my === token;
-/* more pictures for the space under the main photo, when the words beside it run longer (see Myriad.sideFill):
-   the best-liked recent sightings, in the Northwest where there are enough */
-async function offerFill(ctx, where, local=true){
+/* for a group or a place: one photo of each of the species seen most (in the Northwest where there are enough),
+   each with its name on it, so it's plain they're different things; each opens that species' page */
+async function offerMembers(ctx, where, local=true){
+  let list = local ? await counts({...where, place_id: PNW, per_page: 16}).catch(() => []) : [];
+  if(list.length < 4) list = await counts({...where, per_page: 16}).catch(() => []);
+  if(!alive(ctx) || list.length < 2) return;
+  Myriad.sideFill?.(list.map(x => ({src: x.node.img, href: x.node.href, internal: true, name: x.node.name,
+    title: `${x.node.name}${x.node.sub ? ` (${x.node.sub})` : ""} — ${num(x.count)} sightings`})));
+}
+/* more pictures of the same species for the space under the main photo, when the words beside it run longer
+   (see Myriad.sideFill): its best-liked recent sightings, in the Northwest where there are enough */
+async function offerFill(ctx, where){
   const get = extra => nat("observations", {...where, ...extra, photos: "true", quality_grade: "research", order_by: "votes", per_page: 14})
     .then(j => (j.results || []).filter(o => o.photos?.[0]?.url)).catch(() => []);
-  let obs = await get(local ? {place_id: PNW} : {});
-  if(local && obs.length < 4) obs = await get({});
+  let obs = await get({place_id: PNW});
+  if(obs.length < 4) obs = await get({});
   if(!alive(ctx) || obs.length < 2) return;
   Myriad.sideFill?.(obs.map(o => ({src: size(o.photos[0].url, "medium"), href: o.uri,
     title: [cap(o.taxon?.preferred_common_name || o.taxon?.name || ""), o.place_guess, (o.photos[0].attribution || "").replace(/^\(c\)\s*/, "© ").replace(/,.*$/, "")].filter(Boolean).join(" · ")})));
@@ -313,13 +322,14 @@ async function openTopic(title, others=[], query=""){
     Myriad.discover?.trail.add({wing: "field-guide", title: name, name, img: size(p?.medium_url || "", "small") || thumb || ""});
     $("readon").insertAdjacentHTML("beforeend", `<a href="https://www.inaturalist.org/taxa/${t.id}" ${ext}>iNaturalist</a>`
       + `<a class="drift-here" href="./?drift=${t.id}&name=${encodeURIComponent(name)}">Drift from here</a>`);
-    offerFill(ctx, {taxon_id: t.id});
+    /* a species: more photos of itself; a group: one photo each of its most-seen members, named */
+    if(t.rank_level <= 10) offerFill(ctx, {taxon_id: t.id}); else offerMembers(ctx, {taxon_id: t.id});
     return t.rank_level <= 10 ? speciesPage(ctx) : groupPage(ctx);
   }
   plate(wikiImg);
   Myriad.discover?.trail.add({wing: "field-guide", title: name, name, img: thumb || ""});
   const at = claimStr(e, "P625");
-  if(at?.latitude != null){ offerFill(ctx, {lat: at.latitude, lng: at.longitude, radius: 10}, false); return placePage({...ctx, lat: at.latitude, lng: at.longitude}); }
+  if(at?.latitude != null){ offerMembers(ctx, {lat: at.latitude, lng: at.longitude, radius: 10}, false); return placePage({...ctx, lat: at.latitude, lng: at.longitude}); }
 }
 
 /* ---------- a species ---------- */

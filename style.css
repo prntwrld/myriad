@@ -1153,9 +1153,9 @@ button.fg-play:hover,.fg-track.on button.fg-play{background:var(--accent);color:
 .side-fill img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s ease}
 .side-fill a:hover img{transform:scale(1.05)}
 :root[data-theme="y2k"] .side-fill a{border-radius:10px}
-/* people in the side: portraits in black and white until pointed at (as the faces elsewhere), the name underneath on the picture */
+/* named pictures in the side: the name along the bottom; people's portraits in black and white until pointed at (as the faces elsewhere) */
 .side-fill a[data-name]{position:relative}
-.side-fill a[data-name] img{filter:grayscale(1) contrast(1.05);object-position:center 25%}
-.side-fill a[data-name]:hover img{filter:none}
+.side-fill a[data-person] img{filter:grayscale(1) contrast(1.05);object-position:center 25%}
+.side-fill a[data-person]:hover img{filter:none}
 .side-fill a[data-name]::after{content:attr(data-name);position:absolute;left:0;right:0;bottom:0;padding:18px 8px 6px;color:#fff;font-size:14px;line-height:1.2;
   background:linear-gradient(transparent,rgba(0,0,0,.72))}

@@ -124,11 +124,12 @@ const balanceHero = () => {
   const n = Math.min(Math.max(0, Math.floor((room + 8) / (tile + 8))) * 2, Math.floor(list.length / 2) * 2);
   if(+box.dataset.n === n) return;
   box.dataset.n = n; box.hidden = !n;
-  box.innerHTML = list.slice(0, n).map(x => `<a href="${esc(x.href)}"${x.internal ? "" : ` target="_blank" rel="noopener"`} title="${esc(x.title || "")}"${x.name ? ` data-name="${esc(x.name)}"` : ""}><img src="${esc(x.src)}" alt="" loading="lazy"></a>`).join("");
+  box.innerHTML = list.slice(0, n).map(x => `<a href="${esc(x.href)}"${x.internal ? "" : ` target="_blank" rel="noopener"`} title="${esc(x.title || "")}"${x.name ? ` data-name="${esc(x.name)}"` : ""}${x.person ? " data-person" : ""}><img src="${esc(x.src)}" alt="" loading="lazy"></a>`).join("");
 };
 const reBalance = () => { cancelAnimationFrame(balancing); balancing = requestAnimationFrame(balanceHero); };
-/* pictures a page offers for the space under its main picture: [{src, href, title, name?, internal?}]
-   (name is shown over the picture, as for a person; internal links open in the same tab) */
+/* pictures a page offers for the space under its main picture: [{src, href, title, name?, person?, internal?}]
+   (name is shown on the picture; a person's portrait is in black and white until pointed at, as elsewhere;
+   internal links open in the same tab) */
 const sideFill = list => { const side = document.querySelector(".hero .side"); if(side){ side._fill = list; side.querySelector(".side-fill")?.remove(); reBalance(); } };
 /* the summary, the picture and the facts all arrive at different moments, so check whenever the page changes size */
 new ResizeObserver(reBalance).observe(document.documentElement);
