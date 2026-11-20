@@ -106,9 +106,9 @@
     <section class="shelf" id="mapbox" hidden><h2>On the map</h2><p class="sub" id="coords"></p><div id="map"></div></section>
     <section class="shelf best" id="best" hidden><h2>★ Best links</h2><p class="sub">Hand-picked by Myriad</p><div class="grid" id="best-grid"></div></section>
     <section class="shelf" id="relbox" hidden><h2>Related topics</h2><p class="sub">Keep exploring</p><div class="toc" id="rel"></div></section>
-    <section class="shelf"><h2>Free books</h2><p class="sub">Public-domain books, free to read — Open Library &amp; Project Gutenberg</p><div class="grid" id="books"></div></section>
-    <section class="shelf"><h2>Museum</h2><p class="sub">The Metropolitan Museum of Art — open access</p><div class="grid" id="met"></div></section>
-    <section class="shelf"><h2>Archive</h2><p class="sub">Internet Archive — books, film, audio</p><div class="grid" id="ia"></div></section>
+    <section class="shelf lib"><h2>Free books</h2><p class="sub">Public-domain books, free to read — Open Library &amp; Project Gutenberg</p><div class="grid" id="books"></div></section>
+    <section class="shelf lib"><h2>Museum</h2><p class="sub">The Metropolitan Museum of Art — open access</p><div class="grid" id="met"></div></section>
+    <section class="shelf lib"><h2>Archive</h2><p class="sub">Internet Archive — books, film, audio</p><div class="grid" id="ia"></div></section>
   </div>
 </main>
 
@@ -300,7 +300,7 @@ async function openTopic(title, others=[], query=""){
   const name = s.title || title, short = (s.titles?.normalized || name).replace(/ \(.*\)$/,"");
   document.title = name + " — Myriad";
   const disamb = s.type === "disambiguation";
-  const otherLinks = others.filter(o => o !== title && o !== name).slice(0,5);
+  const otherLinks = disamb ? [] : others.filter(o => o !== title && o !== name).slice(0,5);
   $("lead").innerHTML = `<h1>${esc(name)}</h1>
     ${s.description ? `<p class="desc">${esc(s.description)}</p>` : ""}
     <p class="extract">${esc(disamb ? "This name can mean several things. Pick one below." : s.extract)}</p>
@@ -345,7 +345,10 @@ async function openTopic(title, others=[], query=""){
     $("rel").innerHTML = rel.map(topicChip).join(""); $("relbox").hidden = false;
   }).catch(()=>{});
 
-  [["books",books],["met",met],["ia",archive]].forEach(([el,fn]) =>
+  /* a disambiguation page ("Mercury") matches too many things for the libraries to be useful:
+     hide them until the reader picks a meaning */
+  document.querySelectorAll(".lib").forEach(x => x.hidden = disamb);
+  if(!disamb) [["books",books],["met",met],["ia",archive]].forEach(([el,fn]) =>
     fn(short).then(r => { if(my===token) fill(el,r); }).catch(() => { if(my===token) $(el).innerHTML = `<p class="status">Couldn't reach this library right now.</p>`; }));
 }
 
