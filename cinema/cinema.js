@@ -255,6 +255,11 @@ async function openTopic(title, others=[], query=""){
   try { e = await entity(s.wikibase_item); } catch(err){ return; }
   if(my !== token) return;
   const ctx = {my, id: s.wikibase_item, name, e, pic: claimStr(e, "P18") ? "http://commons.wikimedia.org/wiki/Special:FilePath/" + encodeURIComponent(claimStr(e, "P18")) : ""};
+  /* remember it on the reader's trail, and offer to drift onward from here */
+  const kind = isFilm(e) ? "film" : isHuman(e) ? "person" : "";
+  Myriad.discover?.trail.add({wing: "cinema", title: name, name: name.replace(/ \((\d{4} )?(\w+ )?film\)$/, "")});
+  if(kind) $("readon").insertAdjacentHTML("beforeend", `<a class="drift-here" href="./?drift=${s.wikibase_item}&k=${kind}&name=${encodeURIComponent(name)}${
+    kind === "person" && ctx.pic ? "&img=" + encodeURIComponent(commons(ctx.pic, 300)) : ""}">Drift from here</a>`);
   if(isFilm(e)){ $("plate").classList.add("is-poster"); return filmPage(ctx); }
   if(isHuman(e)) return personPage(ctx);
   return collectionPage(ctx);
@@ -483,7 +488,11 @@ document.addEventListener("error", e => {
   if(img.id === "pic") $("plate").hidden = true;
   else if(img.closest(".frame")) img.outerHTML = `<span class="cover">${esc(img.dataset.t || "")}</span>`;
   else if(img.closest(".ph")) img.remove();
+  else if(img.closest(".dc-img")) img.outerHTML = `<span class="dc-ini">·</span>`;
 }, true);
+
+/* shared with the discovery front page (landing.js) */
+window.Cinema = {sparql, posters, posterCache, getJSON, qid, label, artTitle, commons};
 
 const p = new URLSearchParams(location.search);
 if(p.get("t")) openTopic(p.get("t"));

@@ -193,24 +193,26 @@ footer::before{content:"";display:block;border-top:3px double var(--rule);margin
 :root{
   --c-field-guide:#3f5f2c;  /* moss */
   --c-cinema:#8a2128;       /* oxblood */
-  --c-metronome:#8c5a10;    /* ochre */
+  --c-metronome:#8f6700;    /* gold */
+  --c-gallery:#ad4420;      /* terracotta */
   --c-observatory:#3a3486;  /* night indigo */
   --c-academy:#1d5e58;      /* verdigris */
   --c-arcade:#8a2465;       /* plum */
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]):not([data-theme="y2k"]){
-    --c-field-guide:#a9c98c; --c-cinema:#e59a95; --c-metronome:#e3b467;
-    --c-observatory:#aba6f0; --c-academy:#8fd0c8; --c-arcade:#e79bcd;
+    --c-field-guide:#a9c98c; --c-cinema:#e59a95; --c-metronome:#e9c25e;
+    --c-observatory:#aba6f0; --c-academy:#8fd0c8; --c-arcade:#e79bcd; --c-gallery:#f0977a;
   }
 }
 :root[data-theme="dark"]{
-  --c-field-guide:#a9c98c; --c-cinema:#e59a95; --c-metronome:#e3b467;
-  --c-observatory:#aba6f0; --c-academy:#8fd0c8; --c-arcade:#e79bcd;
+  --c-field-guide:#a9c98c; --c-cinema:#e59a95; --c-metronome:#e9c25e;
+  --c-observatory:#aba6f0; --c-academy:#8fd0c8; --c-arcade:#e79bcd; --c-gallery:#f0977a;
 }
 :root:not([data-theme="y2k"]) body[data-wing="field-guide"]{--accent:var(--c-field-guide);--accent-2:var(--c-field-guide)}
 :root:not([data-theme="y2k"]) body[data-wing="cinema"]{--accent:var(--c-cinema);--accent-2:var(--c-cinema)}
 :root:not([data-theme="y2k"]) body[data-wing="metronome"]{--accent:var(--c-metronome);--accent-2:var(--c-metronome)}
+:root:not([data-theme="y2k"]) body[data-wing="gallery"]{--accent:var(--c-gallery);--accent-2:var(--c-gallery)}
 :root:not([data-theme="y2k"]) body[data-wing="observatory"]{--accent:var(--c-observatory);--accent-2:var(--c-observatory)}
 :root:not([data-theme="y2k"]) body[data-wing="academy"]{--accent:var(--c-academy);--accent-2:var(--c-academy)}
 :root:not([data-theme="y2k"]) body[data-wing="arcade"]{--accent:var(--c-arcade);--accent-2:var(--c-arcade)}
@@ -226,8 +228,8 @@ a,.lead .desc,.logo .dot,.cover{transition:color .4s ease,background-color .4s e
   margin:0 9px 0 1px;vertical-align:.12em;flex:none}
 
 /* the nav bar across the top of every page */
-.wings{display:flex;flex-wrap:wrap;align-items:center;gap:6px 24px;padding-top:16px;padding-bottom:12px;
-  font:600 11.5px/1.2 Cinzel,serif;letter-spacing:.16em;text-transform:uppercase;border-bottom:1px solid var(--line)}
+.wings{display:flex;flex-wrap:wrap;align-items:center;gap:6px 19px;padding-top:16px;padding-bottom:12px;
+  font:600 11.5px/1.2 Cinzel,serif;letter-spacing:.13em;text-transform:uppercase;border-bottom:1px solid var(--line)}
 .wings a{color:var(--muted);text-decoration:none;padding:4px 0;border-bottom:1px solid transparent;white-space:nowrap}
 .wings a:hover{color:var(--ink)}
 .wings a[aria-current]{color:var(--ink);border-bottom-color:var(--c, var(--ink))}
@@ -388,6 +390,72 @@ body[data-wing] .masthead .logo{font-size:clamp(40px,7.5vw,76px)}
   .web .nm{font-size:22px} .web .ct{font-size:18px}
   .face{flex-basis:100px}
   .career .bars{height:96px}
+}
+
+/* ======================================================================
+   Discovery: the double feature, Drift, the door, the trail, shuffle.
+   ====================================================================== */
+/* tonight's double feature: two posters with the thread between them */
+.double{display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr) minmax(0,220px);gap:28px;align-items:center;max-width:820px}
+.df-film .poster{display:block}
+.df-play{display:inline-block;margin-top:8px;font:600 11px/1 Cinzel,serif;letter-spacing:.16em;text-transform:uppercase;text-decoration:none;
+  padding:8px 12px;background:var(--accent);color:var(--bg)}
+.df-play:hover{color:var(--bg);filter:brightness(1.1)}
+.df-why{text-align:center}
+.df-why .amp{display:block;font:italic 400 88px/1 "EB Garamond",serif;color:var(--accent);margin-bottom:6px}
+.df-why p{margin:0;font-size:20px;line-height:1.35;text-wrap:balance}
+.free{font-weight:600;font-variant:small-caps;color:var(--accent)}
+
+/* Drift: the path so far, the place you've reached, and the way on */
+.drift-path{list-style:none;margin:0 0 18px;padding:0;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:16px}
+.drift-path button{background:none;border:0;padding:0;min-height:0;font:inherit;letter-spacing:0;text-transform:none;color:var(--accent);
+  text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;cursor:pointer}
+.drift-path button:hover{background:none;color:var(--accent-2)}
+.drift-path .now button{color:var(--ink);text-decoration:none;font-weight:600}
+.drift-path .dp-why{color:var(--muted);font-style:italic}
+.drift-path .dp-why::before{content:"→ "}
+.drift-card{display:grid;grid-template-columns:150px minmax(0,1fr);gap:24px;align-items:center;padding:18px;background:var(--paper);
+  border:1px solid var(--line);max-width:760px;animation:drift-in .45s ease}
+@keyframes drift-in{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.drift-card{animation:none}}
+.dc-img{display:grid;place-items:center;aspect-ratio:2/3;background:var(--soft);overflow:hidden;border:1px solid var(--line);text-decoration:none}
+.dc-img img{width:100%;height:100%;object-fit:cover;display:block}
+.dc-ini{font:600 30px/1 Cinzel,serif;color:var(--muted)}
+.dc-why{margin:0 0 4px;font:600 11px/1.3 Cinzel,serif;letter-spacing:.2em;text-transform:uppercase;color:var(--accent)}
+.drift-card h3{margin:0;font:500 clamp(26px,3.6vw,36px)/1.1 "EB Garamond",serif}
+.drift-card h3 a{color:var(--ink);text-decoration:none}
+.drift-card h3 a:hover{color:var(--accent)}
+.dc-sub{margin:4px 0 0;color:var(--muted);font-size:17px}
+.drift-card .in-wings{margin:12px 0 0}
+.drift-ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button.ghost:hover{background:transparent;border-color:var(--ink);color:var(--ink)}
+.drift-msg{color:var(--muted);font-style:italic;font-size:16px}
+
+/* open a door */
+.door-ctl{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:end;margin-bottom:6px}
+.door-ctl label{display:flex;flex-direction:column;gap:4px;font:600 11px/1 Cinzel,serif;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.door-ctl select{font:inherit;font-size:18px;letter-spacing:0;text-transform:none;color:var(--ink);background:var(--paper);border:1px solid var(--ink);
+  border-radius:0;padding:8px 10px;min-width:9em}
+
+/* the trail */
+.trail{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.trail a{display:inline-block;font-size:16px;padding:4px 12px;border:1px solid var(--line);color:var(--ink);text-decoration:none;background:var(--paper)}
+.trail a:hover{border-color:var(--c, var(--accent));color:var(--c, var(--accent))}
+.trail i{display:inline-block;width:6px;height:6px;background:var(--c);transform:rotate(45deg);margin:0 8px 0 1px;vertical-align:.15em}
+.linkish.small{font-size:14px;margin-left:.6em;font-style:normal}
+
+/* shuffle, beside the suggestions */
+.chips .shuffle{min-height:30px;padding:0 14px;margin-right:14px;font-size:11px;vertical-align:1px}
+.readon a.drift-here{font-weight:600}
+.readon a.drift-here::after{content:" →"}
+
+@media (max-width:760px){
+  .double{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+  .df-why{grid-column:1 / -1;grid-row:1}
+  .df-why .amp{font-size:56px;display:inline;margin-right:8px;vertical-align:-10px}
+  .df-why p{display:inline;font-size:18px}
+  .drift-card{grid-template-columns:96px minmax(0,1fr);gap:16px;padding:14px}
 }
 
 /* ======================================================================
@@ -587,3 +655,20 @@ body[data-wing] .masthead .logo{font-size:clamp(40px,7.5vw,76px)}
   & .poster .t,& .face .t{font-size:14px;font-weight:bold}
 }
 :root[data-theme="y2k"] .linkish{background:none;border:0;box-shadow:none;border-radius:0;color:var(--accent);text-shadow:none;font:bold 15px var(--y-font)}
+
+/* Y2K versions of the discovery pieces */
+:root[data-theme="y2k"]{
+  & .drift-card{border-radius:16px;background:var(--glass);border:1px solid #fff;box-shadow:0 4px 14px rgba(30,60,140,.14),inset 0 1px 0 #fff}
+  & .dc-img{border-radius:10px}
+  & .dc-why{font:bold 11px/1.3 var(--y-pixel);letter-spacing:.12em;color:#c8217a}
+  & .drift-card h3{font:bold clamp(24px,3.4vw,32px)/1.15 var(--y-font)}
+  & .drift-path button{font:bold 15px var(--y-font);box-shadow:none;border:0;text-shadow:none;border-radius:0;color:var(--accent)}
+  & .drift-path .now button{color:var(--ink)}
+  & button.ghost{color:#1a3c8f;background:linear-gradient(#ffffff,#dbe8ff);border:1px solid #9db6e8;border-radius:999px;text-shadow:none}
+  & .df-why .amp{font:bold 72px/1 var(--y-font);color:#ff5fb4;text-shadow:2px 2px 0 #fff}
+  & .df-play{border-radius:999px;background:var(--aqua);font:bold 12px/1 var(--y-font);letter-spacing:.04em;color:#fff}
+  & .door-ctl label{font:bold 11px/1 var(--y-pixel);color:#c8217a}
+  & .door-ctl select{border-radius:999px;border:2px solid #7fa3e0;font:15px var(--y-font);padding:8px 14px}
+  & .trail a{border-radius:999px;border-color:#9db6e8;background:linear-gradient(#ffffff,#dbe8ff);font-size:14px}
+  & .chips .shuffle{border-radius:999px}
+}

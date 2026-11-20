@@ -11,6 +11,8 @@ const WINGS = [
     try:["Jean-Luc Godard","Breathless (1960 film)","French New Wave"]},
   {id:"metronome", name:"Metronome", line:"Music to discover: records, artists, scenes, and what to play next.",
     try:["Kind of Blue","Joni Mitchell","Krautrock"]},
+  {id:"gallery", name:"Gallery", line:"Art and architecture: paintings, buildings, the people who made them, and the movements they made.",
+    try:["Fallingwater","Hokusai","Art Nouveau"]},
   {id:"observatory", name:"Observatory", line:"Space: planets, stars, missions, and what's in tonight's sky.",
     try:["Saturn","Andromeda Galaxy","Voyager 1"]},
   {id:"academy", name:"Academy", line:"Scholarship: papers, authors, citations, and the frontier of AI research.",
@@ -38,6 +40,9 @@ const RULES = {
     any(vals(c,"P106"), ["Q11631","Q11063"]),
   "academy": c => any(vals(c,"P31"), ["Q13442814","Q11862829","Q2267705"]) ||
     any(vals(c,"P106"), ["Q901","Q169470","Q170790","Q4964182","Q1650915","Q82594","Q593644","Q864503","Q1622272","Q2374149"]),
+  "gallery": c => any(vals(c,"P31"), ["Q3305213","Q860861","Q838948","Q968159","Q32880","Q93184","Q125191"]) ||
+    has(c,"P84") || has(c,"P149") || (has(c,"P170") && has(c,"P186")) ||
+    any(vals(c,"P106"), ["Q1028181","Q1281618","Q42973","Q483501","Q33231","Q11569986","Q3391743"]),
   "arcade": c => has(c,"P1733") || has(c,"P1933") || has(c,"P2816") ||
     any(vals(c,"P31"), ["Q7889","Q7058673","Q8076","Q659563"])
 };
