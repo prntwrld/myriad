@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<script src="site.js"></script>
 <header class="wrap masthead">
   <a class="logo" id="logo" href="./">Myriad<span class="dot">.</span></a>
   <p class="tag">Clean topic pages from the world's open libraries. No ads, no clutter.</p>
@@ -28,6 +29,11 @@
 
 <main class="wrap">
   <div id="home">
+    <section class="section">
+      <h2 class="label">The wings</h2>
+      <p class="sub">Rooms that go deeper on one kind of thing</p>
+      <div class="wing-cards" id="wingcards"></div>
+    </section>
     <section class="section">
       <h2 class="label">The reading room</h2>
       <p class="sub">Hand-picked starting points, by subject.</p>
@@ -529,6 +535,7 @@ async function photos(name, words){
 async function openTopic(title, others=[], query=""){
   const my = ++token;
   document.body.classList.add("on");
+  delete document.body.dataset.wing;
   window.scrollTo(0,0);
   $("q").value = query || title;
   $("lead").innerHTML = `<p class="status">Looking it up…</p>`;
@@ -575,6 +582,14 @@ async function openTopic(title, others=[], query=""){
 
   if(s.wikibase_item && !disamb) entity(s.wikibase_item).then(async e => {
     if(my !== token) return;
+    /* which wings this topic belongs to: take on the first one's colour and link to them */
+    const wings = Myriad.wingsFor(e.claims);
+    if(wings.length){
+      document.body.dataset.wing = wings[0].id;
+      const at = $("lead").querySelector(".desc") || $("lead").querySelector("h1");
+      at.insertAdjacentHTML("afterend", `<p class="in-wings">${wings.map(w =>
+        `<a href="${w.id}/" style="--c:var(--c-${w.id})"><i aria-hidden="true"></i>${esc(w.name)}</a>`).join("")}</p>`);
+    }
     const {read, refs} = sources(e, name);
     $("readon").insertAdjacentHTML("beforeend", read.map(r => `<a href="${esc(r.u)}" ${ext}>${esc(r.t)}</a>`).join(""));
     if(refs.length){
@@ -645,7 +660,7 @@ function go(title, others=[], query=""){
   openTopic(title, others, query);
 }
 function home(push=true){
-  token++; locStop?.abort(); document.body.classList.remove("on"); $("q").value = "";
+  token++; locStop?.abort(); document.body.classList.remove("on"); delete document.body.dataset.wing; $("q").value = "";
   document.title = "Myriad — a myriad of info";
   if(push) history.pushState(null, "", location.pathname);
 }
@@ -662,25 +677,10 @@ document.addEventListener("click", e => {
   const a = e.target.closest("[data-go]"); if(!a) return;
   e.preventDefault(); go(a.dataset.go);
 });
-/* the theme switch cycles light → dark → Y2K, and remembers the choice */
-const THEMES = ["light", "dark", "y2k"], THEME_NAME = {light:"Light", dark:"Dark", y2k:"Y2K"};
-const theme = () => {
-  const t = document.documentElement.dataset.theme;
-  return THEMES.includes(t) ? t : (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-};
-const labelTheme = () => {
-  const now = theme(), next = THEMES[(THEMES.indexOf(now) + 1) % THEMES.length];
-  $("theme").setAttribute("aria-label", `Theme: ${THEME_NAME[now]}. Switch to ${THEME_NAME[next]}`);
-  $("theme").title = `Theme: ${THEME_NAME[now]} (next: ${THEME_NAME[next]})`;
-};
-$("theme").addEventListener("click", () => {
-  const next = THEMES[(THEMES.indexOf(theme()) + 1) % THEMES.length];
-  document.documentElement.dataset.theme = next;
-  try { localStorage.setItem("myriad-theme", next); } catch(e){}
-  labelTheme();
-});
-labelTheme();
 $("chips").innerHTML = SUGGEST.map(t => `<a data-go="${esc(t)}">${esc(t)}</a>`).join("");
+$("wingcards").innerHTML = Myriad.WINGS.map(w => `<div class="wing-card" style="--c:var(--c-${w.id})">
+  <a class="wc-name" href="${w.id}/"><i aria-hidden="true"></i>${esc(w.name)}</a><p>${esc(w.line)}</p>
+  <p class="wc-try">${w.try.map(t => `<a data-go="${esc(t)}">${esc(t.replace(/ \(.*\)$/,""))}</a>`).join("")}</p></div>`).join("");
 $("room").innerHTML = Object.entries(BEST).map(([n, links]) => `<div><h3>${esc(n)}</h3><ul>${links.map(l =>
   `<li><a href="${esc(l.u)}" ${ext}>${esc(l.t)}</a><span>${esc(l.why)}</span></li>`).join("")}</ul></div>`).join("");
 

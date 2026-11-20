@@ -187,6 +187,105 @@ footer::before{content:"";display:block;border-top:3px double var(--rule);margin
 #topic{display:none} body.on #topic{display:block} body.on #home{display:none}
 
 /* ======================================================================
+   The wings. Each has one accent colour; everything else is shared.
+   A page sets <body data-wing="…"> and the accent (links, labels, cloth covers, markers) follows.
+   ====================================================================== */
+:root{
+  --c-field-guide:#3f5f2c;  /* moss */
+  --c-cinema:#8a2128;       /* oxblood */
+  --c-metronome:#8c5a10;    /* ochre */
+  --c-observatory:#3a3486;  /* night indigo */
+  --c-academy:#1d5e58;      /* verdigris */
+  --c-arcade:#8a2465;       /* plum */
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]):not([data-theme="y2k"]){
+    --c-field-guide:#a9c98c; --c-cinema:#e59a95; --c-metronome:#e3b467;
+    --c-observatory:#aba6f0; --c-academy:#8fd0c8; --c-arcade:#e79bcd;
+  }
+}
+:root[data-theme="dark"]{
+  --c-field-guide:#a9c98c; --c-cinema:#e59a95; --c-metronome:#e3b467;
+  --c-observatory:#aba6f0; --c-academy:#8fd0c8; --c-arcade:#e79bcd;
+}
+:root:not([data-theme="y2k"]) body[data-wing="field-guide"]{--accent:var(--c-field-guide);--accent-2:var(--c-field-guide)}
+:root:not([data-theme="y2k"]) body[data-wing="cinema"]{--accent:var(--c-cinema);--accent-2:var(--c-cinema)}
+:root:not([data-theme="y2k"]) body[data-wing="metronome"]{--accent:var(--c-metronome);--accent-2:var(--c-metronome)}
+:root:not([data-theme="y2k"]) body[data-wing="observatory"]{--accent:var(--c-observatory);--accent-2:var(--c-observatory)}
+:root:not([data-theme="y2k"]) body[data-wing="academy"]{--accent:var(--c-academy);--accent-2:var(--c-academy)}
+:root:not([data-theme="y2k"]) body[data-wing="arcade"]{--accent:var(--c-arcade);--accent-2:var(--c-arcade)}
+a,.lead .desc,.logo .dot,.cover{transition:color .4s ease,background-color .4s ease}
+/* in the dark, the light accent is too pale behind a cloth cover's white title: deepen it */
+:root[data-theme="dark"] .cover{background:color-mix(in srgb,var(--accent) 45%,#14171c)}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]):not([data-theme="y2k"]) .cover{background:color-mix(in srgb,var(--accent) 45%,#14171c)}
+}
+
+/* the wing diamond: the timeline's marker, filled with the wing's colour */
+.wings i,.in-wings i,.wing-card i{display:inline-block;width:7px;height:7px;background:var(--c);transform:rotate(45deg);
+  margin:0 9px 0 1px;vertical-align:.12em;flex:none}
+
+/* the nav bar across the top of every page */
+.wings{display:flex;flex-wrap:wrap;align-items:center;gap:6px 24px;padding-top:16px;padding-bottom:12px;
+  font:600 11.5px/1.2 Cinzel,serif;letter-spacing:.16em;text-transform:uppercase;border-bottom:1px solid var(--line)}
+.wings a{color:var(--muted);text-decoration:none;padding:4px 0;border-bottom:1px solid transparent;white-space:nowrap}
+.wings a:hover{color:var(--ink)}
+.wings a[aria-current]{color:var(--ink);border-bottom-color:var(--c, var(--ink))}
+.wings .w-home{color:var(--ink);letter-spacing:.22em;margin-right:6px}
+.wings .w-out{margin-left:auto}
+.wings .w-out svg{width:9px;height:9px;margin-left:5px;vertical-align:0}
+.masthead{padding-top:40px}
+
+/* a wing's own landing page: a smaller name than Myriad's, so long names fit */
+body[data-wing] .masthead .logo{font-size:clamp(40px,7.5vw,76px)}
+.wing-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0 44px}
+.wing-card{padding:16px 0 18px;border-top:1px solid var(--line);position:relative}
+.wing-card::before{content:"";position:absolute;top:-1px;left:0;width:56px;border-top:2px solid var(--c)}
+.wing-card .wc-name{font:600 15px/1.2 Cinzel,serif;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);text-decoration:none}
+.wing-card .wc-name:hover{color:var(--c)}
+.wing-card p{margin:8px 0 0;font-size:17px;line-height:1.45;color:var(--muted)}
+.wing-card .wc-try{font-size:16px}
+.wing-card .wc-try a{cursor:pointer;color:var(--c)}
+.wing-card .wc-try a + a::before{content:"·";color:var(--muted);margin:0 8px;display:inline-block}
+
+/* on a topic page: the wings this topic belongs to */
+.in-wings{margin:-10px 0 20px;display:flex;flex-wrap:wrap;gap:8px}
+.in-wings a{font:600 11px/1 Cinzel,serif;letter-spacing:.16em;text-transform:uppercase;text-decoration:none;color:var(--ink);
+  border:1px solid var(--line);padding:7px 12px 6px;background:var(--paper)}
+.in-wings a:hover{border-color:var(--c);color:var(--c)}
+.in-wings a::after{content:" →";letter-spacing:0}
+
+/* the plan for a wing's topic pages: a numbered list in two columns */
+.plan{list-style:none;margin:0;padding:0;counter-reset:plan;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0 40px}
+.plan li{counter-increment:plan;padding:12px 0 12px 44px;border-bottom:1px solid var(--line);position:relative}
+.plan li::before{content:counter(plan,upper-roman);position:absolute;left:0;top:14px;width:32px;
+  font:600 13px/1 Cinzel,serif;color:var(--accent);letter-spacing:.06em}
+.plan b{display:block;font-weight:500;font-size:19px}
+.plan span{display:block;color:var(--muted);font-size:16px;font-style:italic;line-height:1.45}
+
+/* where-to-watch links under a featured shelf */
+.watch{font-size:17px;border-top:1px solid var(--line);padding-top:12px;margin:22px 0 0}
+.watch b{font:600 11px/1 Cinzel,serif;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-right:10px}
+.watch a + a::before{content:"·";color:var(--muted);margin:0 9px;display:inline-block}
+.feature .item{cursor:pointer}
+
+/* Observatory: the picture of the day */
+.apod-fig{margin:0;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:32px;align-items:start}
+.apod-fig img{display:block;width:100%;max-height:440px;object-fit:cover;border:1px solid var(--line);padding:8px;background:var(--paper)}
+.apod-fig b{display:block;font:500 28px/1.15 "EB Garamond",serif;margin-bottom:6px}
+.apod-fig .when{display:block;font-variant:small-caps;color:var(--muted);letter-spacing:.03em;margin-bottom:12px}
+.apod-fig .expl{display:-webkit-box;-webkit-line-clamp:9;-webkit-box-orient:vertical;overflow:hidden;font-size:17px;line-height:1.55}
+
+@media (max-width:760px){
+  /* on a phone the nav wraps onto two or three short centred lines, so every wing stays in view */
+  .wings{justify-content:center;gap:4px 16px;letter-spacing:.12em;font-size:11px}
+  .wings .w-home{flex-basis:100%;text-align:center;margin:0 0 2px}
+  .wings .w-out{margin-left:0}
+  .masthead{padding-top:28px}
+  .apod-fig{grid-template-columns:minmax(0,1fr);gap:16px}
+}
+
+/* ======================================================================
    Y2K — an optional third theme (header switch: light → dark → Y2K).
    Early-2000s web: glossy aqua gel, chrome, bubbly buttons, pixel sparkles,
    a starry grid sky. Every rule is nested under the one selector below.
@@ -339,4 +438,28 @@ footer::before{content:"";display:block;border-top:3px double var(--rule);margin
     & .timeline{padding:10px 14px}
     & .timeline .when{border-left:3px solid #9db6e8}
   }
+}
+
+/* Y2K versions of the wing pieces */
+:root[data-theme="y2k"]{
+  & .wings{font:bold 12px/1.2 var(--y-font);letter-spacing:.06em;text-transform:none;border-bottom:0;gap:8px 8px}
+  & .wings a{color:#1a3c8f;padding:5px 12px;border:1px solid #9db6e8;border-radius:999px;
+    background:linear-gradient(#ffffff,#dbe8ff);box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(30,60,140,.15)}
+  & .wings a:hover,& .wings a[aria-current]{color:#fff;border-color:#0b5bc4;background:var(--aqua);text-shadow:0 1px 1px rgba(0,40,110,.6)}
+  & .wings .w-home{margin-right:0}
+  & .wings i,& .in-wings i,& .wing-card i{border:1px solid rgba(255,255,255,.8)}
+  & .wing-card{background:var(--glass);border:1px solid #fff;border-radius:16px;padding:14px 20px 16px;margin-bottom:18px;
+    box-shadow:0 4px 14px rgba(30,60,140,.14),inset 0 1px 0 #fff}
+  & .wing-card::before{display:none}
+  & .wing-cards{gap:0 18px}
+  & .wing-card .wc-name{font:bold 17px/1.2 var(--y-font);letter-spacing:.02em;text-transform:none;color:#1a3c8f}
+  & .wing-card p{font-size:15px}
+  & .in-wings a{font:bold 12px/1 var(--y-font);letter-spacing:.04em;text-transform:none;border-radius:999px;border-color:#9db6e8}
+  & .plan li::before{font:bold 13px/1 var(--y-pixel);color:#c8217a}
+  & .plan b{font-weight:bold;font-size:17px}
+  & .plan span{font-style:normal;font-size:14px}
+  & .watch b{font:bold 11px/1 var(--y-pixel);letter-spacing:.12em;color:#c8217a}
+  & .apod-fig img{border-radius:16px;border:3px solid #fff}
+  & .apod-fig b{font:bold 24px/1.2 var(--y-font)}
+  & body[data-wing] .masthead .logo{font-size:clamp(40px,7vw,72px)}
 }
