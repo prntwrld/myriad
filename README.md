@@ -6,6 +6,11 @@ Search anything and Myriad builds one page for it: a summary and picture, quick 
 
 Live at [prntwrld.github.io/myriad](https://prntwrld.github.io/myriad/)
 
+## Wings
+Rooms that go deeper on one kind of thing, each with its own accent colour: **Field Guide** (nature), **Cinema**, **Metronome** (music), **Observatory** (space), **Academy** (research, including AI) and **Arcade** (video games). A topic page notices which wings it belongs to and links to them. Wing landing pages are drawn from the `PAGES` table in `wings.js`; the wing list, nav bar and theme switch live in `site.js`.
+
+**Cinema** is the first wing with its own topic pages (`cinema/cinema.js`). A filmmaker gets a career chart, a poster wall, a collaborator web, where to watch, and movements and influences; a film gets its cast, crew, more by the director, and, when it's in the public domain, the film itself playing on the page; a movement gets its filmmakers and films. The data comes from Wikidata's query service, with posters from Wikipedia.
+
 ## Sources
 - [Wikipedia](https://www.wikipedia.org) and [Wikidata](https://www.wikidata.org)
 - [OpenStreetMap](https://www.openstreetmap.org)
@@ -13,8 +18,9 @@ Live at [prntwrld.github.io/myriad](https://prntwrld.github.io/myriad/)
 - [The Metropolitan Museum of Art](https://www.metmuseum.org/art/collection) open access collection
 - [Internet Archive](https://archive.org)
 - [Library of Congress](https://www.loc.gov/photos/) prints & photographs
+- [Wikimedia Commons](https://commons.wikimedia.org) images
 
 Text from Wikipedia is available under CC BY-SA.
 
 ## Adding links
-The hand-picked links are near the top of the script in `index.html`: `BEST` holds the front page's reading room, and `PICKS` holds links for specific topics.
+The hand-picked links are near the top of the script in `index.html`: `BEST` holds the front page's reading room, and `PICKS` holds links for specific topics. Each wing's featured shelf, plan and rooms are in `wings.js`.
