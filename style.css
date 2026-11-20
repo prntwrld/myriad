@@ -200,17 +200,17 @@ footer::before{content:"";display:block;border-top:3px double var(--rule);margin
   --c-gallery:#ad4420;      /* terracotta */
   --c-observatory:#3a3486;  /* night indigo */
   --c-academy:#1d5e58;      /* verdigris */
-  --c-arcade:#8a2465;       /* plum */
+  --c-arcade:#1b6f80;       /* petrol teal: apart from Cinema's red */
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]):not([data-theme="y2k"]){
     --c-field-guide:#a9c98c; --c-cinema:#e59a95; --c-metronome:#e9c25e;
-    --c-observatory:#aba6f0; --c-academy:#8fd0c8; --c-arcade:#e79bcd; --c-gallery:#f0977a;
+    --c-observatory:#aba6f0; --c-academy:#8fd0c8; --c-arcade:#7fcfdc; --c-gallery:#f0977a;
   }
 }
 :root[data-theme="dark"]{
   --c-field-guide:#a9c98c; --c-cinema:#e59a95; --c-metronome:#e9c25e;
-  --c-observatory:#aba6f0; --c-academy:#8fd0c8; --c-arcade:#e79bcd; --c-gallery:#f0977a;
+  --c-observatory:#aba6f0; --c-academy:#8fd0c8; --c-arcade:#7fcfdc; --c-gallery:#f0977a;
 }
 :root:not([data-theme="y2k"]) body[data-wing="field-guide"]{--accent:var(--c-field-guide);--accent-2:var(--c-field-guide)}
 :root:not([data-theme="y2k"]) body[data-wing="cinema"]{--accent:var(--c-cinema);--accent-2:var(--c-cinema)}
@@ -699,8 +699,7 @@ body{--stripe-1:color-mix(in srgb,var(--accent) 35%,#e8913a);--stripe-2:var(--ac
 /* the front page has no room of its own, so its rules run through every open wing's colour */
 :root:not([data-theme="y2k"]) body:not([data-wing]){
   & .masthead::after,& footer::before{height:5px;
-    background:linear-gradient(90deg,var(--c-field-guide) 0 16.66%,var(--c-cinema) 0 33.33%,var(--c-metronome) 0 50%,var(--c-gallery) 0 66.66%,
-      var(--c-observatory) 0 83.33%,var(--c-arcade) 0)}
+    background:var(--wing-band)}
 }
 
 /* ---------- tonight's double feature: two modest posters, the person between them ---------- */
@@ -941,3 +940,20 @@ button.dn-opt:hover .dn-go{transform:translateX(3px)}
 /* a movement's relatives: a label, then its links */
 .rel-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin:0 0 10px}
 .rel-row b{font:600 11px/1 var(--display);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);min-width:9em}
+
+/* ---------- the wings' colours, in a flow from cool to warm ----------
+   green → teal → indigo → red → terracotta → gold: the front page's band, and the wash over the logo */
+:root{--wing-band:linear-gradient(90deg,var(--c-field-guide) 0 16.66%,var(--c-arcade) 0 33.33%,var(--c-observatory) 0 50%,
+  var(--c-cinema) 0 66.66%,var(--c-gallery) 0 83.33%,var(--c-metronome) 0)}
+
+/* on the front page the wings' colours wash once across the name as the page opens, then settle to ink;
+   the full stop keeps its blue throughout */
+@keyframes myriad-wash{from{background-position:100% 0}to{background-position:0 0}}
+:root:not([data-theme="y2k"]) body:not([data-wing]) .logo{
+  background:linear-gradient(90deg,var(--ink) 0 26%,var(--c-field-guide) 36%,var(--c-arcade) 44%,var(--c-observatory) 52%,
+    var(--c-cinema) 60%,var(--c-gallery) 68%,var(--c-metronome) 76%,var(--ink) 86% 100%);
+  background-size:400% 100%;background-position:0 0;-webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;animation:myriad-wash 3.4s cubic-bezier(.45,.05,.4,1) .2s both}
+:root:not([data-theme="y2k"]) body:not([data-wing]) .logo .dot{-webkit-text-fill-color:var(--accent)}
+:root:not([data-theme="y2k"]) body.on:not([data-wing]) .logo{animation:none}
+@media (prefers-reduced-motion:reduce){ :root:not([data-theme="y2k"]) body:not([data-wing]) .logo{animation:none} }
