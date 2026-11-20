@@ -1013,7 +1013,7 @@ button.fg-play:hover,.fg-track.on button.fg-play{background:var(--accent);color:
 
 /* field marks: measurements stand out */
 .fg-marks{columns:2 340px;column-gap:44px}
-.fg-marks p{margin:0 0 12px;font-size:18px;line-height:1.6;break-inside:avoid-column}
+.fg-marks p{margin:0 0 12px;font-size:18px;line-height:1.6}
 .fg-marks b,.fg-cmp-text b{font-weight:600;color:var(--accent)}
 
 /* look-alikes: choose one, then the two side by side. The chooser is a set of tabs, so square. */
@@ -1135,3 +1135,27 @@ button.fg-play:hover,.fg-track.on button.fg-play{background:var(--accent);color:
   .fg-alike-pick{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-right:-24px;padding-right:24px}
   .fg-alike-pick button{flex:none}
 }
+/* field marks beside range & season on a wide screen; either one alone takes the whole row */
+@media (min-width:761px){
+  .fg-pair{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:0 44px;align-items:start;margin:44px 0}
+  .fg-pair > .section{margin:0}
+  .fg-pair:has(> .section[hidden]){display:block}
+  .fg-pair:has(> .section[hidden]) > .section{margin:44px 0}
+  .fg-pair:not(:has(> .section[hidden])) .fg-marks{columns:auto}
+  .fg-pair:not(:has(> .section[hidden])) .fg-range{grid-template-columns:minmax(0,1fr);gap:26px}
+  .fg-pair:not(:has(> .section[hidden])) .fg-map{height:300px}
+}
+/* quick facts under the summary on a wide screen, and more pictures under the main one (see site.js) */
+.lead .facts.in-lead{margin-top:30px}
+:root[data-theme="y2k"] .lead .facts.in-lead{background:none;border:0;box-shadow:none;padding:0}
+.side-fill{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:-6px}
+.side-fill a{display:block;aspect-ratio:1;overflow:hidden;background:var(--soft)}
+.side-fill img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s ease}
+.side-fill a:hover img{transform:scale(1.05)}
+:root[data-theme="y2k"] .side-fill a{border-radius:10px}
+/* named pictures in the side: the name along the bottom; people's portraits in black and white until pointed at (as the faces elsewhere) */
+.side-fill a[data-name]{position:relative}
+.side-fill a[data-person] img{filter:grayscale(1) contrast(1.05);object-position:center 25%}
+.side-fill a[data-person]:hover img{filter:none}
+.side-fill a[data-name]::after{content:attr(data-name);position:absolute;left:0;right:0;bottom:0;padding:18px 8px 6px;color:#fff;font-size:14px;line-height:1.2;
+  background:linear-gradient(transparent,rgba(0,0,0,.72))}

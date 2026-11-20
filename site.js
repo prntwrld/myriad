@@ -99,5 +99,42 @@ document.addEventListener("DOMContentLoaded", () => {
   labelTheme(btn);
 });
 
-window.Myriad = {ROOT, WINGS, ALL_WINGS, TELESCOPE, wingsFor, takeover, topicIn, esc};
+/* Topic pages: the words on the left (the summary, then the quick facts, whole), the picture on the right.
+   When the words run longer than the picture, the right-hand column fills with a few more pictures the page offers
+   (Myriad.sideFill), in whole rows, as many as fit, so no hole opens beside the words. Every page builds its topic
+   header the same way (#lead beside .side), so this serves them all; on a phone the columns stack and nothing moves. */
+let balancing = 0;
+/* how tall a column's content is (the grid stretches both columns to the taller one, so its own height won't say) */
+const contentH = (el, skip) => { const kids = [...el.children].filter(k => !k.hidden && k.offsetParent && k !== skip); return kids.length ? kids.at(-1).getBoundingClientRect().bottom - el.getBoundingClientRect().top : 0; };
+const balanceHero = () => {
+  const lead = document.getElementById("lead"), side = lead?.closest(".hero")?.querySelector(".side");
+  if(!lead || !side) return;
+  const facts = document.getElementById("facts"), wide = matchMedia("(min-width: 761px)").matches;
+  /* only once the facts are filled in: until then the page may still rewrite the summary, and the facts with it */
+  if(facts && !facts.hidden){
+    if(wide && facts.parentElement !== lead){ lead.append(facts); facts.classList.add("in-lead"); }
+    if(!wide && facts.parentElement === lead){ side.append(facts); facts.classList.remove("in-lead"); }
+  }
+  /* the extra pictures: whole rows of two, as many as fit beside the words */
+  let box = side.querySelector(".side-fill");
+  const list = side._fill || [];
+  if(!wide || !list.length){ if(box){ box.remove(); document.dispatchEvent(new CustomEvent("myriad-sidefill", {detail: []})); } return; }
+  if(!box){ box = document.createElement("div"); box.className = "side-fill"; side.append(box); }
+  const tile = (side.clientWidth - 8) / 2, room = contentH(lead) - contentH(side, box) - 18;
+  const n = Math.min(Math.max(0, Math.floor((room + 8) / (tile + 8))) * 2, Math.floor(list.length / 2) * 2);
+  if(+box.dataset.n === n) return;
+  box.dataset.n = n; box.hidden = !n;
+  /* say which are showing, so a wall further down the page can leave them out rather than repeat them */
+  document.dispatchEvent(new CustomEvent("myriad-sidefill", {detail: list.slice(0, n).map(x => x.href)}));
+  box.innerHTML = list.slice(0, n).map(x => `<a href="${esc(x.href)}"${x.internal ? "" : ` target="_blank" rel="noopener"`} title="${esc(x.title || "")}"${x.name ? ` data-name="${esc(x.name)}"` : ""}${x.person ? " data-person" : ""}><img src="${esc(x.src)}" alt="" loading="lazy"></a>`).join("");
+};
+const reBalance = () => { cancelAnimationFrame(balancing); balancing = requestAnimationFrame(balanceHero); };
+/* pictures a page offers for the space under its main picture: [{src, href, title, name?, person?, internal?}]
+   (name is shown on the picture; a person's portrait is in black and white until pointed at, as elsewhere;
+   internal links open in the same tab) */
+const sideFill = list => { const side = document.querySelector(".hero .side"); if(side){ side._fill = list; side.querySelector(".side-fill")?.remove(); reBalance(); } };
+/* the summary, the picture and the facts all arrive at different moments, so check whenever the page changes size */
+new ResizeObserver(reBalance).observe(document.documentElement);
+
+window.Myriad = {ROOT, WINGS, ALL_WINGS, TELESCOPE, wingsFor, takeover, topicIn, esc, sideFill};
 }
