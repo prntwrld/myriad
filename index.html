@@ -234,10 +234,11 @@ async function books(q){
     m:(b.authors||[]).map(a=>a.name).join(", "), img:b.formats?.["image/jpeg"]}));
 }
 async function met(q){
-  const s = await getJSON("https://collectionapi.metmuseum.org/public/collection/v1/search?hasImages=true&q=" + encodeURIComponent(q));
-  const objs = await Promise.all((s.objectIDs||[]).slice(0,6).map(id =>
+  /* v1.1 search (the old v1 search was retired in Oct 2026 and now returns 410 Gone) */
+  const s = await getJSON("https://collectionapi.metmuseum.org/public/collection/v1.1/search?hasImages=true&limit=10&q=" + encodeURIComponent(q));
+  const objs = await Promise.all((s.objectIDs||[]).slice(0,10).map(id =>
     getJSON(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${id}`).catch(()=>null)));
-  return objs.filter(o => o && o.primaryImageSmall).map(o => ({u:o.objectURL, t:o.title,
+  return objs.filter(o => o && o.primaryImageSmall).slice(0,6).map(o => ({u:o.objectURL, t:o.title,
     m:[o.artistDisplayName,o.objectDate].filter(Boolean).join(" · "), img:o.primaryImageSmall}));
 }
 async function archive(q){
