@@ -43,6 +43,7 @@
         <div class="facts" id="facts" hidden><h2 class="label">Quick facts</h2><dl id="factlist"></dl></div>
       </aside>
     </div>
+    <section class="section" id="timebox" hidden><h2 class="label">Timeline</h2><p class="sub">Dates from Wikidata</p><ol class="timeline" id="timeline"></ol></section>
     <section class="section" id="tocbox" hidden><h2 class="label">In the article</h2><p class="sub">Jump to a section on Wikipedia</p><div class="toc" id="toc"></div></section>
     <section class="section" id="best" hidden><h2 class="label">Further reading</h2><p class="sub">Trusted sources with a page on exactly this topic</p><ul class="refs" id="refs"></ul></section>
     <section class="section" id="mapbox" hidden><h2 class="label">On the map</h2><p class="sub" id="coords"></p><div id="map"></div></section>
@@ -181,16 +182,20 @@ async function entity(qid){
   const j = await getJSON(WD + "action=wbgetentities&props=claims|sitelinks/urls&sitefilter=simplewiki|enwikivoyage|enwikiquote&ids=" + qid);
   return j.entities?.[qid] || {};
 }
+/* a Wikidata date at its own precision: "April 12, 1861", "1687", "400 CE", "5th century BCE" */
+const ordinal = n => n + (n % 100 > 10 && n % 100 < 14 ? "th" : ({1:"st",2:"nd",3:"rd"}[n % 10] || "th"));
 function fmtTime(v){
   const m = /^([+-])(\d+)-(\d\d)-(\d\d)/.exec(v.time); if(!m) return "";
-  const y = Number(m[2]), bce = m[1] === "-" ? " BCE" : "";
+  const y = Number(m[2]), bce = m[1] === "-" ? " BCE" : "", era = bce || (y < 1000 ? " CE" : "");
+  /* setUTCFullYear, because Date.UTC reads years 0–99 as 1900–1999 */
+  const day = (mo, d) => { const t = new Date(Date.UTC(2000, mo-1, d)); t.setUTCFullYear(y); return t; };
   if(v.precision >= 11 && m[3] !== "00" && m[4] !== "00")
-    return new Date(Date.UTC(y, m[3]-1, m[4])).toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric",timeZone:"UTC"}) + bce;
+    return day(m[3], m[4]).toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric",timeZone:"UTC"}) + era;
   if(v.precision === 10 && m[3] !== "00")
-    return new Date(Date.UTC(y, m[3]-1, 1)).toLocaleDateString(undefined,{year:"numeric",month:"long",timeZone:"UTC"}) + bce;
-  if(v.precision === 8) return Math.floor(y/10)*10 + "s" + bce;
-  if(v.precision === 7) return (Math.floor((y-1)/100)+1) + "th century" + bce;
-  return y + bce;
+    return day(m[3], 1).toLocaleDateString(undefined,{year:"numeric",month:"long",timeZone:"UTC"}) + era;
+  if(v.precision === 8) return Math.floor(y/10)*10 + "s" + era;
+  if(v.precision === 7) return ordinal(Math.floor((y-1)/100)+1) + " century" + era;
+  return y + era;
 }
 function pickClaims(list){
   const good = list.filter(c => c.rank !== "deprecated" && c.mainsnak?.datavalue);
@@ -238,6 +243,91 @@ function sources(e, name){
     ...SISTERS.filter(([k]) => sl[k]).map(([k, src, why]) => ({src, t: sl[k].title, u: sl[k].url, why}))
   ];
   return {read, refs};
+}
+
+/* ---------- Timeline: a short chronology built from Wikidata's dates ----------
+   Milestones are the topic's own dates (born, founded, begins, ends…). Events are things the topic's
+   statements name, dated by the statement ("significant event: explosion, 1687") or, failing that,
+   by the thing's own dates (the battles a war "has as parts"). For a war or other span of time, the
+   battles and incidents that say they are "part of" it are found too. The most notable events
+   (most Wikipedia editions) fill the rows left after the milestones. Shown only with 3+ dated rows. */
+const MILESTONES = [["P569","Born"],["P571","Founded"],["P1249","First recorded"],["P1619","Opens"],["P580","Begins"],
+  ["P585","Takes place"],["P582","Ends"],["P3999","Closes"],["P576","Comes to an end"],["P570","Dies"]];
+const an = l => (/^[aeiou]/i.test(l) ? "an " : "a ") + l;
+/* statements that name an event, and how to word it; "own" ones may be dated by the event itself
+   (and are linked only when they are a specific happening, not a general idea like "explosion"),
+   "link" ones link to the thing's own Wikipedia page */
+const HAPPENINGS = {
+  P793: {say: l => l, own: true},               // significant event
+  P527: {say: l => l, own: true, brief: true},  // has part(s): battles of a war; theatres lasting years are left out
+  P31:  {say: l => "Becomes " + an(l)},          // instance of, from a date: a temple that became a church
+  P39:  {say: l => "Becomes " + l, link: true},  // position held
+  P26:  {say: l => "Marries " + l, link: true},  // spouse
+  P166: {say: l => "Receives the " + l},         // award received
+  P1435:{say: l => "Listed as " + l}             // heritage designation
+};
+const TIMELINE_MAX = 9;
+const timeOf = snaks => (snaks || []).find(s => s.datavalue?.type === "time")?.datavalue.value;
+/* of several dates for the same moment, the most precise ("1861" vs "April 12, 1861") */
+const sharpest = (...vs) => vs.filter(Boolean).sort((a, b) => b.precision - a.precision)[0];
+const ownTime = (claims, pid) => timeOf((claims[pid] ? pickClaims(claims[pid]) : []).map(c => c.mainsnak));
+function when(v){
+  const m = v && /^([+-])(\d+)-(\d\d)-(\d\d)/.exec(v.time); if(!m) return null;
+  return {key: (m[1] === "-" ? -1 : 1) * Number(m[2]) * 1e4 + Number(m[3]) * 100 + Number(m[4]), text: fmtTime(v)};
+}
+async function timeline(e){
+  const c = e.claims || {}, built = c.P84 || c.P149;   // has an architect or a style: a building
+  const rows = [];
+  for(const [pid, what] of MILESTONES){
+    if(pid === "P585" && (c.P580 || c.P582)) continue;   // a span already has its own start and end
+    const d = when(ownTime(c, pid)); if(!d) continue;
+    rows.push({...d, label: built && pid === "P571" ? "Built" : built && pid === "P576" ? "Destroyed" : what, mile: true, rank: Infinity});
+  }
+  const events = [];
+  for(const [pid, h] of Object.entries(HAPPENINGS)) for(const st of (c[pid] || [])){
+    const id = st.rank !== "deprecated" && st.mainsnak?.datavalue?.value?.id; if(!id) continue;
+    const q = st.qualifiers || {}, start = sharpest(timeOf(q.P585), timeOf(q.P580));
+    if(start || h.own) events.push({id, h, start, end: timeOf(q.P582)});
+  }
+  /* a span of time (a war, a revolution): also the dated things that are "part of" it */
+  if(c.P580 && e.id){
+    const j = await getJSON(WD + "action=query&list=search&srnamespace=0&srlimit=15&srsearch=" + encodeURIComponent("haswbstatement:P361=" + e.id)).catch(() => ({}));
+    (j.query?.search || []).forEach(s => events.push({id: s.title, h: HAPPENINGS.P527}));
+  }
+  const seen = new Set(), list = events.filter(x => x.id !== e.id && !seen.has(x.id) && seen.add(x.id));
+  if(!list.length) return finish(rows);
+  /* labels, Wikipedia titles and notability (number of Wikipedias) for every event, plus the claims of those
+     that may carry their own dates */
+  const ask = (ids, props) => ids.length ? getJSON(WD + "action=wbgetentities&languages=en&props=" + props + "&ids=" + ids.join("|")).then(j => j.entities || {}) : {};
+  const plain = list.filter(x => !x.h.own).slice(0, 50), own = list.filter(x => x.h.own).slice(0, 25);
+  const [a, b] = await Promise.all([ask(plain.map(x => x.id), "labels|sitelinks"), ask(own.map(x => x.id), "labels|sitelinks|claims")]);
+  for(const x of [...plain, ...own]){
+    const ent = a[x.id] || b[x.id], label = ent?.labels?.en?.value; if(!label) continue;
+    const ec = ent.claims || {};
+    const start = when(x.start || sharpest(ownTime(ec, "P585"), ownTime(ec, "P580")));
+    const end = when(x.start ? x.end : ownTime(ec, "P582"));
+    if(!start) continue;
+    const linked = x.h.link || (x.h.own && (ownTime(ec, "P585") || ownTime(ec, "P580")));
+    if(x.h.brief && end && end.key - start.key >= 1e4) continue;   // a part lasting a year or more is a phase, not an event
+    rows.push({...start, label: x.h.say(label).replace(/^./, ch => ch.toUpperCase()), go: linked ? ent.sitelinks?.enwiki?.title : "",
+      until: end && end.text !== start.text ? end.text : "", rank: Object.keys(ent.sitelinks || {}).length});
+  }
+  return finish(rows);
+}
+/* keep the milestones and the most notable events, in date order; things on the same date share a row
+   ("Battle of Fort Sumter — begins") */
+function finish(rows){
+  const keep = rows.map((r, i) => ({...r, i})).sort((p, q) => q.rank - p.rank || p.i - q.i).slice(0, TIMELINE_MAX)
+    .sort((p, q) => p.key - q.key || p.i - q.i);
+  const out = [];
+  for(const r of keep){
+    const last = out.at(-1);
+    if(last && last.text === r.text && last.mile !== r.mile){
+      const [m, ev] = last.mile ? [last, r] : [r, last];
+      out[out.length - 1] = {...ev, tag: m.label};
+    } else if(!(last && last.text === r.text && last.label === r.label)) out.push(r);
+  }
+  return out.length >= 3 ? out : [];
 }
 
 /* ---------- other libraries ---------- */
@@ -376,7 +466,7 @@ async function openTopic(title, others=[], query=""){
   window.scrollTo(0,0);
   $("q").value = query || title;
   $("lead").innerHTML = `<p class="status">Looking it up…</p>`;
-  ["plate","facts","tocbox","mapbox","best","relbox"].forEach(id => $(id).hidden = true);
+  ["plate","facts","timebox","tocbox","mapbox","best","relbox"].forEach(id => $(id).hidden = true);
   ["books","met","ia","loc"].forEach(id => { $(id).innerHTML = `<p class="status">Searching…</p>`; more(id, ""); });
   locStop?.abort();
 
@@ -425,6 +515,13 @@ async function openTopic(title, others=[], query=""){
       $("refs").innerHTML = refs.map(r => `<li><span class="src">${esc(r.src)}</span><a href="${esc(r.u)}" ${ext}>${esc(r.t)}</a>${r.why ? `<span class="why">${esc(r.why)}</span>` : ""}</li>`).join("");
       $("best").hidden = false;
     }
+    timeline(e).then(t => {
+      if(my !== token || !t.length) return;
+      $("timeline").innerHTML = t.map(r => `<li${r.mile && !r.tag ? ` class="mile"` : ""}><span class="when">${esc(r.text)}</span><span class="what">${
+        r.go ? `<a data-go="${esc(r.go)}">${esc(r.label)}</a>` : esc(r.label)}${
+        r.tag ? `<span class="tl-tag">${esc(r.tag)}</span>` : ""}${r.until ? `<span class="until">until ${esc(r.until)}</span>` : ""}</span></li>`).join("");
+      $("timebox").hidden = false;
+    }).catch(()=>{});
     const rows = await facts(e.claims || {});
     if(my !== token || !rows.length) return;
     $("factlist").innerHTML = rows.map(r => `<dt>${esc(r.label)}</dt><dd>${r.vals.map(v =>
