@@ -11,7 +11,7 @@ const ALL_WINGS = [
     try:["Myst","Shadow of the Colossus","Tetris"]},
   {id:"cinema", name:"Cinema", ready:true, line:"Films and filmmakers: filmographies, collaborators, movements, and where to watch.",
     try:["Jean-Luc Godard","Breathless (1960 film)","French New Wave"]},
-  {id:"field-guide", name:"Field Guide", line:"Birds, beasts and plants: how to know them, where to find them, what they sound like.",
+  {id:"field-guide", name:"Field Guide", ready:true, line:"Birds, beasts, plants and fungi: how to know them, where to find them, what they sound like.",
     try:["Steller's jay","Western redcedar","Orca"]},
   {id:"gallery", name:"Gallery", line:"Art and architecture: paintings, buildings, the people who made them, and the movements they made.",
     try:["Fallingwater","Hokusai","Art Nouveau"]},
@@ -58,7 +58,9 @@ const wingsFor = claims => WINGS.filter(w => { try { return RULES[w.id](claims |
 const OWN = {
   /* films, film movements and film genres, and people whose first-listed work is film */
   "cinema": c => has(c,"P4947") || any(vals(c,"P31"), ["Q11424","Q24869","Q202866","Q93204","Q24862","Q226730","Q506240","Q3001152","Q201658"]) ||
-    ["Q2526255","Q3455803","Q28389","Q222344","Q7042855","Q10800557","Q33999"].includes(vals(c,"P106")[0])
+    ["Q2526255","Q3455803","Q28389","Q222344","Q7042855","Q10800557","Q33999"].includes(vals(c,"P106")[0]),
+  /* living things: anything with a scientific name, or that Wikidata calls a taxon; a person named after a plant stays put */
+  "field-guide": c => !vals(c,"P31").includes("Q5") && (has(c,"P225") || has(c,"P3151") || any(vals(c,"P31"), ["Q16521","Q55983715"]))
 };
 const takeover = claims => {
   const ws = wingsFor(claims).filter(w => w.ready);

@@ -56,14 +56,14 @@ const trail = {
 
 /* ---------- Drift: a walk through connections ----------
    drift(el, {start, next, restart}) — start is a node; next(node, visited) returns [{node, why}] candidates.
-   A node is {key, kind, name, href, img, sub, chips:[{wing, href}]}. "why" is the joining phrase ("shot by").
+   A node is {key, kind, name, href, img, sub, chips:[{wing, href}], shape?: "round"|"tall"}. "why" is the joining phrase ("shot by").
    Each step offers a few threads to pull, each saying how it connects; you pick one (or ask for a surprise),
    and the path you've walked stays along the top so you can step back to any point. */
 const PER = 3;
 function drift(el, opts){
   let path = [], options = null, shown = 0, msg = "", token = 0;
   const ini = n => esc((n.name || "?").split(/\s+/).map(w => w[0]).slice(0, 2).join(""));
-  const shape = n => n.kind === "person" ? "round" : "tall";
+  const shape = n => n.shape || (n.kind === "person" ? "round" : "tall");
   const thumb = n => n.img ? `<img src="${esc(n.img)}" alt="" loading="lazy">` : `<span class="dc-ini">${ini(n)}</span>`;
   const nodeCard = (n, why) => `<div class="drift-card">
       <a class="dc-img ${shape(n)}" href="${esc(n.href)}">${thumb(n)}</a>
@@ -102,7 +102,8 @@ function drift(el, opts){
     if(me !== token) return;
     options = got; render();
   };
-  const go = c => { path.push(c); load(); };
+  /* opts.visit(node), if given, hears of every step taken (a wing can add it to the reader's collection) */
+  const go = c => { path.push(c); opts.visit?.(c.node); load(); };
   el.addEventListener("click", async e => {
     const t = e.target;
     const pick = t.closest("[data-pick]");

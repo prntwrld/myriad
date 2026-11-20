@@ -9,17 +9,10 @@ const ext = `target="_blank" rel="noopener"`;
 const PAGES = {
   "field-guide": {
     tag: "A field guide to the living world — birds, beasts and plants, how to know them, and where to find them.",
-    placeholder: "A bird, a tree, a beetle — Varied thrush, salal, banana slug…",
-    chips: ["Varied thrush","Western redcedar","Banana slug","Pacific madrone","Great blue heron","Salal"],
+    placeholder: "A bird, a tree, a mushroom — varied thrush, salal, chanterelle…",
+    chips: ["Varied thrush","Western redcedar","Banana slug","Chanterelle","Great blue heron","Salal"],
     feature: {label:"Birds of the Pacific Northwest", sub:"A first page of the guide — open any one", photos:true,
       items:["Steller's jay","Varied thrush","Bald eagle","Great blue heron","Anna's hummingbird","Pileated woodpecker","Black-capped chickadee","Spotted towhee"]},
-    plan: [
-      ["Field marks","Size, shape, colours and the details that tell it apart, set beside its look-alikes."],
-      ["Range & season","A range map from GBIF, and a bar of the months it's most often seen."],
-      ["Seen near you","Recent sightings from iNaturalist around where you are, with their photos."],
-      ["Song & call","Recordings to listen to, and links to Xeno-canto and the Macaulay Library."],
-      ["Family tree","Its place in the tree of life, with its nearest relatives a click away."],
-      ["Conservation","IUCN status and the threats it faces."]],
     rooms: {
       "Identify it": [
         {t:"iNaturalist", u:"https://www.inaturalist.org", why:"Photograph anything alive; naturalists help name it."},
@@ -31,10 +24,13 @@ const PAGES = {
       "Plants": [
         {t:"Washington Native Plant Society", u:"https://www.wnps.org", why:"The go-to for PNW native plants."},
         {t:"USDA PLANTS Database", u:"https://plants.usda.gov", why:"Every plant in the U.S., with range maps."}],
+      "Fungi": [
+        {t:"Puget Sound Mycological Society", u:"https://www.psms.org", why:"Forays, identification days and the Northwest's mushroom lore."},
+        {t:"MushroomExpert.com", u:"https://www.mushroomexpert.com", why:"Michael Kuo's keys and species pages."}],
       "Go deeper": [
         {t:"eBird", u:"https://ebird.org", why:"Where birds are being seen right now."},
         {t:"Animal Diversity Web", u:"https://animaldiversity.org", why:"University of Michigan species accounts."}]},
-    sources: "iNaturalist, GBIF, Wikidata, Wikipedia, Xeno-canto"
+    sources: "iNaturalist, GBIF, Wikidata, Wikipedia, and Xeno-canto's recordings on Wikimedia Commons"
   },
 
   "cinema": {
