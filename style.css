@@ -54,7 +54,8 @@ a:hover{color:var(--accent-2)}
 .logo:hover{color:var(--ink)}
 .logo .dot{color:var(--accent)}
 .tag{grid-column:1;font-style:italic;color:var(--muted);font-size:20px;margin:10px 0 24px}
-#f{grid-column:1;display:flex;max-width:640px}
+#f{grid-column:1;display:flex;max-width:640px;margin-top:28px}
+body.on #f{margin-top:0}
 .theme{grid-column:2;grid-row:1;align-self:start}
 .chips{grid-column:1;margin-top:16px;font-size:16px;color:var(--muted)}
 .chips a{cursor:pointer}
@@ -695,11 +696,11 @@ body{--stripe-1:color-mix(in srgb,var(--accent) 35%,#e8913a);--stripe-2:var(--ac
   & button.ghost{border-color:var(--accent);color:var(--accent)}
   & button.ghost:hover{background:var(--accent);color:var(--bg);border-color:var(--accent)}
 }
-/* the front page has no room of its own, so its rules run through every wing's colour */
+/* the front page has no room of its own, so its rules run through every open wing's colour */
 :root:not([data-theme="y2k"]) body:not([data-wing]){
   & .masthead::after,& footer::before{height:5px;
-    background:linear-gradient(90deg,var(--c-field-guide) 0 14.28%,var(--c-cinema) 0 28.57%,var(--c-metronome) 0 42.85%,var(--c-gallery) 0 57.14%,
-      var(--c-observatory) 0 71.42%,var(--c-academy) 0 85.71%,var(--c-arcade) 0)}
+    background:linear-gradient(90deg,var(--c-field-guide) 0 16.66%,var(--c-cinema) 0 33.33%,var(--c-metronome) 0 50%,var(--c-gallery) 0 66.66%,
+      var(--c-observatory) 0 83.33%,var(--c-arcade) 0)}
 }
 
 /* ---------- tonight's double feature: two modest posters, the person between them ---------- */
@@ -928,3 +929,15 @@ button.dn-opt:hover .dn-go{transform:translateX(3px)}
   .wings .w-home{flex-basis:100%;text-align:center;margin:0 0 2px}
   .wings .w-out{margin-left:0}
 }
+
+/* posters, album covers and box art: one, centred, on a blur of its own colours (like Now showing) */
+.wc-pic.framed{position:relative;aspect-ratio:16/9;display:grid;place-items:center;background:#111;overflow:hidden}
+.wc-pic.framed .bg{position:absolute;inset:-30px;background-size:cover;background-position:center;filter:blur(24px) brightness(.6) saturate(1.2)}
+.wc-pic.framed img{position:relative;height:84%;width:auto;max-width:90%;object-fit:contain;box-shadow:0 10px 22px -8px rgba(0,0,0,.7);transition:transform .6s ease}
+.wc-pic.framed:hover img{transform:scale(1.03)}
+.wc-pic.framed .wc-cap{z-index:1}
+/* posters, covers and box art fill the card too, cropped from a little below the top where the picture usually is */
+.wc-pic.tall-src img{object-position:center 28%}
+/* a movement's relatives: a label, then its links */
+.rel-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin:0 0 10px}
+.rel-row b{font:600 11px/1 var(--display);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);min-width:9em}
