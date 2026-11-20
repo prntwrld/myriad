@@ -24,3 +24,6 @@ Text from Wikipedia is available under CC BY-SA.
 
 ## Adding links
 The hand-picked links are near the top of the script in `index.html`: `BEST` holds the front page's reading room, and `PICKS` holds links for specific topics. Each wing's featured shelf, plan and rooms are in `wings.js`.
+
+## Publishing changes
+Browsers keep `style.css` and the scripts for a few minutes. When you change one, bump the `?v=` tag on its links in `index.html` and each wing's `index.html` so visitors get the new file straight away.
