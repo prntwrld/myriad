@@ -211,6 +211,17 @@ function capped(host, items, render, {n=40, what="species", tile=0}={}){
   draw();
 }
 
+/* a wall of members under the header, leaving out any already pictured beside the summary (see Myriad.sideFill) */
+let sideShown = new Set();
+document.addEventListener("myriad-sidefill", e => { sideShown = new Set(e.detail); document.dispatchEvent(new Event("fg-redraw")); });
+function membersWall(ctx, host, list){
+  const draw = () => capped(host, list.filter(x => !sideShown.has(x.node.href)),
+    l => `<div class="wall fg-wall">${l.map(x => card(x.node, `${num(x.count)} sightings`)).join("")}</div>`);
+  const redraw = () => { if(alive(ctx)) draw(); else document.removeEventListener("fg-redraw", redraw); };
+  document.addEventListener("fg-redraw", redraw);
+  draw();
+}
+
 /* the IUCN Red List categories, and the regional ones worth noting */
 const IUCN = {LC:"Least Concern", NT:"Near Threatened", VU:"Vulnerable", EN:"Endangered", CR:"Critically Endangered", EW:"Extinct in the Wild", EX:"Extinct", DD:"Data Deficient"};
 const IUCN_QID = {Q211005:"LC", Q719675:"NT", Q278113:"VU", Q11394:"EN", Q219127:"CR", Q239509:"EW", Q237350:"EX", Q3245245:"DD"};
@@ -278,7 +289,7 @@ async function findTaxon(e, name){
 }
 
 async function openTopic(title, others=[], query=""){
-  const my = ++token;
+  const my = ++token; sideShown = new Set();
   document.body.classList.add("on"); window.scrollTo(0, 0); stop();
   $("q").value = query || title;
   shell();
@@ -558,9 +569,9 @@ async function groupPage(ctx){
     if(!alive(ctx) || list.length < 2) return;
     const sec = $("s-members");
     if(!where) sec.querySelector("h2").textContent = "Its members";
-    sec.querySelector(".sub").textContent = where ? `${list.length >= 200 ? "The 200" : `All ${list.length}`} species seen here, most sightings first, from iNaturalist` : "Its most-seen species around the world, from iNaturalist";
+    sec.querySelector(".sub").textContent = where ? "Species seen here, most sightings first, from iNaturalist" : "Its most-seen species around the world, from iNaturalist";
     sec.hidden = false;
-    capped(sec.querySelector(".body"), list, l => `<div class="wall fg-wall">${l.map(x => card(x.node, `${num(x.count)} sightings`)).join("")}</div>`);
+    membersWall(ctx, sec.querySelector(".body"), list);
   })();
 
   rangeAndSeason(ctx, {taxon_id: t.id}, claimStr(e, "P846"), t.name);
@@ -597,7 +608,7 @@ async function placePage(ctx){
     if(!alive(ctx) || list.length < 3) return;
     ctx.here = new Set(list.map(x => x.node.id));
     $("s-members").hidden = false;
-    capped($("s-members").querySelector(".body"), list, l => `<div class="wall fg-wall">${l.map(x => card(x.node, `${num(x.count)} sightings`)).join("")}</div>`);
+    membersWall(ctx, $("s-members").querySelector(".body"), list);
     const wide = await counts({...at, radius: 50, per_page: 80}).catch(() => []);
     const more = wide.filter(x => !ctx.here.has(x.node.id)).slice(0, 16);
     if(alive(ctx) && more.length >= 4) show("s-also", `<div class="wall strip fg-strip">${more.map(x => card(x.node)).join("")}</div>`);

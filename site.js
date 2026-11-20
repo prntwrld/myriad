@@ -118,12 +118,14 @@ const balanceHero = () => {
   /* the extra pictures: whole rows of two, as many as fit beside the words */
   let box = side.querySelector(".side-fill");
   const list = side._fill || [];
-  if(!wide || !list.length){ box?.remove(); return; }
+  if(!wide || !list.length){ if(box){ box.remove(); document.dispatchEvent(new CustomEvent("myriad-sidefill", {detail: []})); } return; }
   if(!box){ box = document.createElement("div"); box.className = "side-fill"; side.append(box); }
   const tile = (side.clientWidth - 8) / 2, room = contentH(lead) - contentH(side, box) - 18;
   const n = Math.min(Math.max(0, Math.floor((room + 8) / (tile + 8))) * 2, Math.floor(list.length / 2) * 2);
   if(+box.dataset.n === n) return;
   box.dataset.n = n; box.hidden = !n;
+  /* say which are showing, so a wall further down the page can leave them out rather than repeat them */
+  document.dispatchEvent(new CustomEvent("myriad-sidefill", {detail: list.slice(0, n).map(x => x.href)}));
   box.innerHTML = list.slice(0, n).map(x => `<a href="${esc(x.href)}"${x.internal ? "" : ` target="_blank" rel="noopener"`} title="${esc(x.title || "")}"${x.name ? ` data-name="${esc(x.name)}"` : ""}${x.person ? " data-person" : ""}><img src="${esc(x.src)}" alt="" loading="lazy"></a>`).join("");
 };
 const reBalance = () => { cancelAnimationFrame(balancing); balancing = requestAnimationFrame(balanceHero); };
