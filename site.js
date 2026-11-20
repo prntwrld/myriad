@@ -5,20 +5,20 @@ const ROOT = new URL(".", document.currentScript.src).href;
 
 /* The wings. Each is a specialist room with its own accent colour (set in style.css as --c-<id>). */
 const ALL_WINGS = [
-  {id:"field-guide", name:"Field Guide", line:"Birds, beasts and plants: how to know them, where to find them, what they sound like.",
-    try:["Steller's jay","Western redcedar","Orca"]},
-  {id:"cinema", name:"Cinema", ready:true, line:"Films and filmmakers: filmographies, collaborators, movements, and where to watch.",
-    try:["Jean-Luc Godard","Breathless (1960 film)","French New Wave"]},
-  {id:"metronome", name:"Metronome", line:"Music to discover: records, artists, scenes, and what to play next.",
-    try:["Kind of Blue","Joni Mitchell","Krautrock"]},
-  {id:"gallery", name:"Gallery", line:"Art and architecture: paintings, buildings, the people who made them, and the movements they made.",
-    try:["Fallingwater","Hokusai","Art Nouveau"]},
-  {id:"observatory", name:"Observatory", line:"Space: planets, stars, missions, and what's in tonight's sky.",
-    try:["Saturn","Andromeda Galaxy","Voyager 1"]},
   {id:"academy", name:"Academy", parked:true, line:"Scholarship: papers, authors, citations, and the frontier of AI research.",
     try:["Claude Shannon","Information theory","Transformer (deep learning)"]},
   {id:"arcade", name:"Arcade", line:"Video games: history, platforms, makers, and old games you can play in the browser.",
-    try:["Myst","Shadow of the Colossus","Tetris"]}
+    try:["Myst","Shadow of the Colossus","Tetris"]},
+  {id:"cinema", name:"Cinema", ready:true, line:"Films and filmmakers: filmographies, collaborators, movements, and where to watch.",
+    try:["Jean-Luc Godard","Breathless (1960 film)","French New Wave"]},
+  {id:"field-guide", name:"Field Guide", line:"Birds, beasts and plants: how to know them, where to find them, what they sound like.",
+    try:["Steller's jay","Western redcedar","Orca"]},
+  {id:"gallery", name:"Gallery", line:"Art and architecture: paintings, buildings, the people who made them, and the movements they made.",
+    try:["Fallingwater","Hokusai","Art Nouveau"]},
+  {id:"metronome", name:"Metronome", line:"Music to discover: records, artists, scenes, and what to play next.",
+    try:["Kind of Blue","Joni Mitchell","Krautrock"]},
+  {id:"observatory", name:"Observatory", line:"Space: planets, stars, missions, and what's in tonight's sky.",
+    try:["Saturn","Andromeda Galaxy","Voyager 1"]}
 ];
 /* a parked wing keeps its page (and its folder) but leaves the nav, the front page and topic links until it's ready */
 const WINGS = ALL_WINGS.filter(w => !w.parked);
@@ -68,7 +68,7 @@ const takeover = claims => {
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const here = document.body.dataset.wing || "";
 
-/* the nav bar: Myriad, the six wings (each marked with a diamond in its colour), and Télescope */
+/* the nav bar: Myriad, the wings in alphabetical order (each marked with a diamond in its colour), and Télescope */
 document.currentScript.insertAdjacentHTML("afterend", `<nav class="wings wrap" aria-label="Myriad and its wings">
   <a class="w-home" href="${ROOT}"${here ? "" : ` aria-current="page"`}>Myriad</a>
   ${WINGS.map(w => `<a href="${ROOT}${w.id}/" style="--c:var(--c-${w.id})"${w.id === here ? ` aria-current="page"` : ""}><i aria-hidden="true"></i>${esc(w.name)}</a>`).join("")}
