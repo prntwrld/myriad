@@ -11,6 +11,10 @@ Rooms that go deeper on one kind of thing, each with its own accent colour: **Fi
 
 **Cinema** is the first wing with its own topic pages (`cinema/cinema.js`). A filmmaker gets a career chart, a poster wall, a collaborator web, where to watch, and movements and influences; a film gets its cast, crew, more by the director, and, when it's in the public domain, the film itself playing on the page; a movement gets its filmmakers and films. The data comes from Wikidata's query service, with posters from Wikipedia.
 
+**Field Guide** has its own topic pages too (`field-guide/guide.js`), leaning toward the Pacific Northwest. A species gets iNaturalist's photographs, songs and calls that play on the page, its field marks from Wikipedia, its look-alikes side by side (from what iNaturalist's identifiers most often confuse it with), a GBIF range map and a bar of the months it's seen, sightings near you (only if you allow your location), its IUCN status, and its place in the tree of life. A group (a family, a genus) gets its members and relatives; a wild place (Mount Rainier) gets what lives there. Recordings are Xeno-canto's, by way of Wikimedia Commons, since Xeno-canto's own API now needs a personal key; when Commons has none, iNaturalist observers' recordings stand in. Every recording is checked before it's shown.
+
+The Field Guide's front page (`field-guide/landing.js`) opens on a species of the day, then a wall of what's been seen in Washington, Oregon and British Columbia this week, what's blooming, migrating, singing and fruiting this month, Drift through look-alikes and relatives, a shelf of the season's songs that plays straight through, and your collection.
+
 ## Discovery
 Myriad should let you find things you didn't know to look for. `discover.js` holds the pieces every wing shares: picks of the day that are the same for everyone and change at midnight, **Drift** (a walk from one thing to a connected thing, one step at a time, saying why), and **your trail** (what you've wandered through across Myriad, kept only in your browser).
 
@@ -25,7 +29,8 @@ On this day and the door use `cinema/data.json`, thousands of well-known films a
 - [The Metropolitan Museum of Art](https://www.metmuseum.org/art/collection) open access collection
 - [Internet Archive](https://archive.org)
 - [Library of Congress](https://www.loc.gov/photos/) prints & photographs
-- [Wikimedia Commons](https://commons.wikimedia.org) images
+- [Wikimedia Commons](https://commons.wikimedia.org) images, and Xeno-canto's recordings
+- [iNaturalist](https://www.inaturalist.org), [GBIF](https://www.gbif.org) and [Xeno-canto](https://xeno-canto.org)
 
 Text from Wikipedia is available under CC BY-SA.
 
