@@ -215,11 +215,12 @@ const PAGES = {
   }
 };
 
-const id = document.body.dataset.wing, P = PAGES[id], W = window.Myriad.WINGS.find(w => w.id === id);
+const id = document.body.dataset.wing, P = PAGES[id], W = window.Myriad.ALL_WINGS.find(w => w.id === id);
 /* a wing with its own topic pages keeps its links inside the wing; the others open Myriad's main page */
 const topic = t => W.ready ? `./?t=${encodeURIComponent(t)}` : `${ROOT}?t=${encodeURIComponent(t)}`;
 document.title = `${W.name} — Myriad`;
-$("tag").textContent = P.tag;
+/* the wing's line lives on as the page description (shared links, search results), not on the page */
+document.querySelector('meta[name="description"]')?.setAttribute("content", P.tag);
 /* a wing that isn't open yet says so once, quietly, beside its name */
 if(!W.ready) document.querySelector(".logo")?.insertAdjacentHTML("afterend", `<span class="soon">Opening soon</span>`);
 $("q").placeholder = P.placeholder;

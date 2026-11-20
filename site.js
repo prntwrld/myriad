@@ -4,7 +4,7 @@
 const ROOT = new URL(".", document.currentScript.src).href;
 
 /* The wings. Each is a specialist room with its own accent colour (set in style.css as --c-<id>). */
-const WINGS = [
+const ALL_WINGS = [
   {id:"field-guide", name:"Field Guide", line:"Birds, beasts and plants: how to know them, where to find them, what they sound like.",
     try:["Steller's jay","Western redcedar","Orca"]},
   {id:"cinema", name:"Cinema", ready:true, line:"Films and filmmakers: filmographies, collaborators, movements, and where to watch.",
@@ -15,11 +15,13 @@ const WINGS = [
     try:["Fallingwater","Hokusai","Art Nouveau"]},
   {id:"observatory", name:"Observatory", line:"Space: planets, stars, missions, and what's in tonight's sky.",
     try:["Saturn","Andromeda Galaxy","Voyager 1"]},
-  {id:"academy", name:"Academy", line:"Scholarship: papers, authors, citations, and the frontier of AI research.",
+  {id:"academy", name:"Academy", parked:true, line:"Scholarship: papers, authors, citations, and the frontier of AI research.",
     try:["Claude Shannon","Information theory","Transformer (deep learning)"]},
   {id:"arcade", name:"Arcade", line:"Video games: history, platforms, makers, and old games you can play in the browser.",
     try:["Myst","Shadow of the Colossus","Tetris"]}
 ];
+/* a parked wing keeps its page (and its folder) but leaves the nav, the front page and topic links until it's ready */
+const WINGS = ALL_WINGS.filter(w => !w.parked);
 const TELESCOPE = "https://prntwrld.github.io/telescope/";
 
 /* Which wings a topic belongs to, from its Wikidata claims.
@@ -95,5 +97,5 @@ document.addEventListener("DOMContentLoaded", () => {
   labelTheme(btn);
 });
 
-window.Myriad = {ROOT, WINGS, TELESCOPE, wingsFor, takeover, topicIn, esc};
+window.Myriad = {ROOT, WINGS, ALL_WINGS, TELESCOPE, wingsFor, takeover, topicIn, esc};
 }

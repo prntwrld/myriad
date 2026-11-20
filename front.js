@@ -16,7 +16,7 @@ const HERO = [
   ["Giant's Causeway","field-guide"],["Olympic National Park","field-guide"],
   ["Long Room","academy"],["Stockholm Public Library","academy"],["Antikythera mechanism","academy"],["Library of Celsus","academy"]
 ];
-/* each wing's card: a wide picture, or for posters, covers and box art, a strip of three */
+/* each wing's card: a wide picture, or for posters, covers and box art, one framed on a blur of its own colours */
 const CARD = {
   "field-guide": {wide: ["Orca","Bald eagle","Snowy owl","Western redcedar","Great blue heron","Roosevelt elk","Monarch butterfly","Giant sequoia"]},
   "cinema":      {strip: ["Blade Runner 2049","Dune (2021 film)","Arrival (film)","2001: A Space Odyssey (film)","The Grand Budapest Hotel","Stalker (1979 film)",
@@ -88,8 +88,9 @@ showHero();
     if(!card || !want[w.id]) continue;
     const ok = want[w.id].filter(t => got[t]?.src);
     if(!ok.length) continue;
+    const t0 = ok[0], src0 = esc(got[t0].src);
     const html = c.strip
-      ? `<div class="wc-pic strip">${ok.slice(0, 3).map(t => `<a ${linkTo(t, w)} title="${esc(short(t))}"><img src="${esc(got[t].src)}" alt="" loading="lazy"></a>`).join("")}</div>`
+      ? `<a class="wc-pic framed" ${linkTo(t0, w)} title="${esc(short(t0))}"><span class="bg" style="background-image:url('${src0}')"></span><img src="${src0}" alt="" loading="lazy"><span class="wc-cap">${esc(short(t0))}</span></a>`
       : `<a class="wc-pic wide" ${linkTo(ok[0], w)} title="${esc(short(ok[0]))}"><img src="${esc(got[ok[0]].src)}" alt="" loading="lazy"><span class="wc-cap">${esc(short(ok[0]))}</span></a>`;
     card.insertAdjacentHTML("afterbegin", html);
   }
