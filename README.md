@@ -2,7 +2,7 @@
 
 **A myriad of info** — clean, ad-free topic pages built from the world's open libraries.
 
-Search anything and Myriad builds one page for it: a summary and picture, quick facts, a map, the article's sections, other encyclopedias to read it in, further reading, related topics, and shelves of free books, museum objects and archive finds.
+Search anything and Myriad builds one page for it: a summary and picture, quick facts, a map, the article's sections, other encyclopedias to read it in, further reading, related topics, and shelves of free books, museum objects, archive finds and historic photographs.
 
 Live at [myriadof.info](https://myriadof.info)
 
@@ -12,6 +12,7 @@ Live at [myriadof.info](https://myriadof.info)
 - [Open Library](https://openlibrary.org) and [Project Gutenberg](https://www.gutenberg.org)
 - [The Metropolitan Museum of Art](https://www.metmuseum.org/art/collection) open access collection
 - [Internet Archive](https://archive.org)
+- [Library of Congress](https://www.loc.gov/photos/) prints & photographs
 
 Text from Wikipedia is available under CC BY-SA.
 

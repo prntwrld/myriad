@@ -50,10 +50,11 @@
     <section class="section shelf lib"><h2 class="label">Free books</h2><p class="sub">Public-domain books, free to read in full — Open Library &amp; Project Gutenberg</p><div class="row" id="books"></div></section>
     <section class="section shelf lib"><h2 class="label">Museum</h2><p class="sub">The Metropolitan Museum of Art — open access</p><div class="row" id="met"></div></section>
     <section class="section shelf lib"><h2 class="label">Archive</h2><p class="sub">Internet Archive — books, film, audio</p><div class="row" id="ia"></div></section>
+    <section class="section shelf lib"><h2 class="label">Photographs</h2><p class="sub">Library of Congress — prints &amp; photographs</p><div class="row" id="loc"></div></section>
   </div>
 </main>
 
-<footer class="wrap">Myriad draws on free public collections: Wikipedia, Wikidata, OpenStreetMap, Open Library, Project Gutenberg, The Met, and the Internet Archive. Text from Wikipedia is available under CC BY-SA.</footer>
+<footer class="wrap">Myriad draws on free public collections: Wikipedia, Wikidata, OpenStreetMap, Open Library, Project Gutenberg, The Met, the Internet Archive, and the Library of Congress. Text from Wikipedia is available under CC BY-SA.</footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
@@ -277,6 +278,29 @@ async function archive(q){
     m:[d.mediatype,d.year].filter(Boolean).join(" · "), img:`https://archive.org/services/img/${d.identifier}`}));
 }
 
+/* Photographs: the Library of Congress. Its search often takes 10–30 seconds, so it starts only after
+   the other shelves are done (or after a few seconds), gets one try with a 30-second limit, and is
+   cancelled when the reader moves on. Restricted items and "group of images" placeholders are skipped. */
+let locStop = null;
+async function photos(q){
+  locStop?.abort(); locStop = new AbortController();
+  const signal = AbortSignal.any ? AbortSignal.any([locStop.signal, AbortSignal.timeout(30000)]) : AbortSignal.timeout(30000);
+  const r = await fetch("https://www.loc.gov/photos/?fo=json&at=results&c=15&fa=online-format:image&q=" + encodeURIComponent(q), {signal});
+  if(!r.ok) throw new Error(r.status);
+  const j = await r.json();
+  return (j.results||[]).filter(x => !x.access_restricted).map(x => {
+    /* image_url lists sizes as "...jpg#h=150&w=114": take the smallest that is at least 300px across */
+    const sizes = (x.image_url||[]).filter(u => /\.jpg(#|$)/.test(u)).map(u => {
+      const h = +(/[#&]h=(\d+)/.exec(u)||[])[1] || 0, w = +(/[#&]w=(\d+)/.exec(u)||[])[1] || 0;
+      return {u: u.split("#")[0], n: Math.max(h, w)};
+    }).sort((a,b) => a.n - b.n);
+    const img = (sizes.find(z => z.n >= 300) || sizes.at(-1))?.u;
+    const year = /^\d{4}/.exec(x.date || "")?.[0];
+    return img && {u: String(x.url || x.id).replace(/^(https?:)?\/\//, "https://"), t: x.title,
+      m: [(x.contributor||[])[0], year].filter(Boolean).join(" · "), img};
+  }).filter(Boolean).slice(0,6);
+}
+
 /* ---------- render a topic page ---------- */
 async function openTopic(title, others=[], query=""){
   const my = ++token;
@@ -285,13 +309,14 @@ async function openTopic(title, others=[], query=""){
   $("q").value = query || title;
   $("lead").innerHTML = `<p class="status">Looking it up…</p>`;
   ["plate","facts","tocbox","mapbox","best","relbox"].forEach(id => $(id).hidden = true);
-  ["books","met","ia"].forEach(id => $(id).innerHTML = `<p class="status">Searching…</p>`);
+  ["books","met","ia","loc"].forEach(id => $(id).innerHTML = `<p class="status">Searching…</p>`);
+  locStop?.abort();
 
   let s;
   try { s = await summary(title); } catch(e){
     if(my===token){
       $("lead").innerHTML = `<p class="status">Couldn't load that topic. Try again in a moment, or try another search.</p>`;
-      ["books","met","ia"].forEach(id => $(id).innerHTML = "");
+      ["books","met","ia","loc"].forEach(id => $(id).innerHTML = "");
     }
     return;
   }
@@ -356,8 +381,17 @@ async function openTopic(title, others=[], query=""){
   /* a disambiguation page ("Mercury") matches too many things for the libraries to be useful:
      hide them until the reader picks a meaning */
   document.querySelectorAll(".lib").forEach(x => x.hidden = disamb);
-  if(!disamb) [["books",books],["met",met],["ia",archive]].forEach(([el,fn]) =>
-    fn(short).then(r => { if(my===token) fill(el,r); }).catch(() => { if(my===token) $(el).innerHTML = `<p class="status">Couldn't reach this library right now.</p>`; }));
+  if(disamb) return;
+  const shelf = (el, fn) => fn(short).then(r => { if(my===token) fill(el,r); })
+    .catch(e => { if(my===token) $(el).innerHTML = `<p class="status">${e.name === "TimeoutError"
+      ? "This library didn't answer in time. Try again later." : "Couldn't reach this library right now."}</p>`; });
+  const rest = [["books",books],["met",met],["ia",archive]].map(([el,fn]) => shelf(el, fn));
+  /* the slow Library of Congress goes last */
+  Promise.race([Promise.allSettled(rest), new Promise(ok => setTimeout(ok, 4000))]).then(() => {
+    if(my !== token) return;
+    $("loc").innerHTML = `<p class="status">Searching the Library of Congress — this one can take a little while…</p>`;
+    shelf("loc", photos);
+  });
 }
 
 /* ---------- navigation ---------- */
@@ -376,7 +410,7 @@ function go(title, others=[], query=""){
   openTopic(title, others, query);
 }
 function home(push=true){
-  token++; document.body.classList.remove("on"); $("q").value = "";
+  token++; locStop?.abort(); document.body.classList.remove("on"); $("q").value = "";
   document.title = "Myriad — a myriad of info";
   if(push) history.pushState(null, "", location.pathname);
 }
