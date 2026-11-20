@@ -43,7 +43,7 @@
         <div class="facts" id="facts" hidden><h2 class="label">Quick facts</h2><dl id="factlist"></dl></div>
       </aside>
     </div>
-    <section class="section" id="timebox" hidden><h2 class="label">Timeline</h2><p class="sub">Dates from Wikidata</p><ol class="timeline" id="timeline"></ol></section>
+    <section class="section" id="timebox" hidden><h2 class="label">Timeline</h2><p class="sub">Dates from Wikidata, context from the Wikipedia article</p><ol class="timeline" id="timeline"></ol></section>
     <section class="section" id="tocbox" hidden><h2 class="label">In the article</h2><p class="sub">Jump to a section on Wikipedia</p><div class="toc" id="toc"></div></section>
     <section class="section" id="best" hidden><h2 class="label">Further reading</h2><p class="sub">Trusted sources with a page on exactly this topic</p><ul class="refs" id="refs"></ul></section>
     <section class="section" id="mapbox" hidden><h2 class="label">On the map</h2><p class="sub" id="coords"></p><div id="map"></div></section>
@@ -285,6 +285,7 @@ async function timeline(e){
   }
   const events = [];
   for(const [pid, h] of Object.entries(HAPPENINGS)) for(const st of (c[pid] || [])){
+    if(pid === "P31" && !built) continue;   // "historical country from 1453" says little; "a mosque from 1460" does
     const id = st.rank !== "deprecated" && st.mainsnak?.datavalue?.value?.id; if(!id) continue;
     const q = st.qualifiers || {}, start = sharpest(timeOf(q.P585), timeOf(q.P580));
     if(start || h.own) events.push({id, h, start, end: timeOf(q.P582)});
@@ -304,13 +305,18 @@ async function timeline(e){
   for(const x of [...plain, ...own]){
     const ent = a[x.id] || b[x.id], label = ent?.labels?.en?.value; if(!label) continue;
     const ec = ent.claims || {};
-    const start = when(x.start || sharpest(ownTime(ec, "P585"), ownTime(ec, "P580")));
-    const end = when(x.start ? x.end : ownTime(ec, "P582"));
+    /* a part with only an inception date ("Great Pyramid of Giza — built") counts for a site without dates of its own,
+       not for an empire, whose provinces and colonies would crowd out its events */
+    const happened = sharpest(ownTime(ec, "P585"), ownTime(ec, "P580")), made = !x.start && !happened && !c.P580 && !c.P571 && ownTime(ec, "P571");
+    const start = when(x.start || happened || made);
+    const end = when(x.start ? x.end : ownTime(ec, "P582") || ownTime(ec, "P576"));
     if(!start) continue;
-    const linked = x.h.link || (x.h.own && (ownTime(ec, "P585") || ownTime(ec, "P580")));
+    const linked = x.h.link || (x.h.own && (happened || made));
     if(x.h.brief && end && end.key - start.key >= 1e4) continue;   // a part lasting a year or more is a phase, not an event
     rows.push({...start, label: x.h.say(label).replace(/^./, ch => ch.toUpperCase()), go: linked ? ent.sitelinks?.enwiki?.title : "",
-      until: end && end.text !== start.text ? end.text : "", rank: Object.keys(ent.sitelinks || {}).length});
+      until: end && end.text !== start.text ? end.text : "", rank: Object.keys(ent.sitelinks || {}).length,
+      event: !!x.h.own, person: x.h === HAPPENINGS.P26,
+      tag: made ? (ec.P84 || ec.P149 || ec.P186 || ec.P2048 ? "Built" : "Established") : ""});   // architect, style, material or height: a structure
   }
   return finish(rows);
 }
@@ -322,12 +328,72 @@ function finish(rows){
   const out = [];
   for(const r of keep){
     const last = out.at(-1);
-    if(last && last.text === r.text && last.mile !== r.mile){
-      const [m, ev] = last.mile ? [last, r] : [r, last];
-      out[out.length - 1] = {...ev, tag: m.label};
+    const pure = x => x.mile && !x.go;   // one of the topic's own dates, not yet sharing its row
+    if(last && last.text === r.text && pure(last) !== pure(r) && (pure(last) || pure(r)) && !(last.go && r.go)){
+      const [m, ev] = pure(last) ? [last, r] : [r, last];
+      out[out.length - 1] = {...ev, tag: m.label, mile: true};
+    } else if(last && pure(last) && pure(r) && Math.trunc(last.key / 1e4) === Math.trunc(r.key / 1e4)){
+      if(r.text.length > last.text.length) out[out.length - 1] = r;   // "Ends 395" and "Comes to an end January 17, 395": keep the exact one
     } else if(!(last && last.text === r.text && last.label === r.label)) out.push(r);
   }
   return out.length >= 3 ? out : [];
+}
+/* Context for each row: the sentence in the topic's own Wikipedia article that best mentions the row's date
+   or event ("In 1687, a Venetian bombardment ignited the gunpowder stored inside…"), linked to that spot
+   in the article. A row with an article of its own and no such sentence gets that article's first sentence. */
+const CUES = {Born:/\bborn\b/, Dies:/\b(died|death|killed|assassinat)/, Founded:/\b(found|establish|creat)/,
+  Built:/\b(built|construct|complet|erect)/, Destroyed:/\b(destr|demoli|ruin)/, Begins:/\b(began|begin|start|outbreak)/,
+  Ends:/\b(ended|end of|surrender|conclu)/, "Comes to an end":/\b(destr|ended|fall|fell|decline|collapse|dissol)/,
+  Opens:/\bopen/, Closes:/\bclos/};
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const ORD = ["","first","second","third","fourth","fifth","sixth","seventh","eighth","ninth","tenth","eleventh","twelfth"];
+function datePattern(r){
+  const y = Math.abs(Math.trunc(r.key / 1e4)), bc = r.key < 0 ? "\\s*(?:BC|BCE|B\\.C\\.)" : "(?!\\s*(?:BC|BCE|B\\.C\\.))";
+  const c = /^(\d+)\w\w century/.exec(r.text);
+  if(c) return new RegExp(`\\b(?:${c[1]}(?:st|nd|rd|th)|${ORD[c[1]] || "@"})[- ]century${r.key < 0 ? "\\s*(?:BC|BCE)" : ""}`, "i");
+  /* a date with a month must name it: "April 1861", "April 12, 1861", "12 April 1861" */
+  const mo = /^\D*\d+$/.test(r.text) ? "" : MONTHS[Math.floor(Math.abs(r.key) / 100) % 100 - 1];
+  if(mo) return new RegExp(`\\b${mo}\\s+(?:\\d{1,2},?\\s+)?${y}\\b|\\b\\d{1,2}\\s+${mo}\\s+${y}\\b`);
+  return new RegExp(`\\b${y}${bc}\\b`, r.key < 0 ? "i" : "");
+}
+/* split prose into sentences, but not after "a.k.a.", "U.S.", "Gen." and the like */
+const sentencesOf = text => text.replace(/^=+ .* =+$/gm, "\n")
+  .split(/\n+|(?<=[.!?])(?<!\b(?:[A-Za-z]\.){2,3})(?<!\b(?:Mr|Mrs|Dr|St|Gen|Col|Lt|Capt|Sgt|Jr|Sr|Co|Inc|vs|c|ca|No)\.)\s+(?=[A-Z"“(])/)
+  .map(x => x.trim()).filter(x => x.length > 30);
+/* a snippet without its asides ("(Arabic: …, romanized: …)") and cut at about 230 characters */
+const clip = (t, n=230) => { t = t.replace(/\s*\([^()]*\)/g, "").replace(/\s+([,.;])/g, "$1"); return t.length > n ? t.slice(0, t.lastIndexOf(" ", n)) + "…" : t; };
+const spot = (base, sentence) => base + "#:~:text=" + encodeURIComponent(sentence.split(/\s+/).slice(0, 6).join(" ")).replace(/-/g, "%2D");
+async function context(name, base, rows){
+  const j = await getJSON(W + "action=query&prop=extracts&explaintext=1&redirects=1&titles=" + encodeURIComponent(name)).catch(() => ({}));
+  const sents = sentencesOf(Object.values(j.query?.pages || {})[0]?.extract || "");
+  const used = new Set();
+  for(const r of rows){
+    /* the event's own name, as an article would say it: "Battle of Antietam" → "Antietam" */
+    const what = r.person ? r.label.split(" ").slice(1, 3).join(" ")   // "Marries Mary Todd Lincoln" → "Mary Todd"
+      : r.go ? r.go.replace(/ \(.*\)$/, "").replace(/^(?:(?:First|Second|Third) )?(?:Battle|Siege|Sack|Fall|Treaty|Destruction|Burning|Founding|Assassination|Death|Coronation) of (?:the )?/i, "") : "";
+    const date = datePattern(r);
+    const cue = CUES[r.tag || r.label], named = what ? new RegExp("\\b" + what.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") : null;
+    let best = null, top = 0;
+    sents.forEach((t, i) => {
+      /* it must give the date, and for an event with an article of its own, also name it */
+      if(used.has(i) || !date.test(t) || (named && !named.test(t))) return;
+      const score = 1 + (cue?.test(t.toLowerCase()) ? 1 : 0) + (/\bUNESCO|World Heritage/.test(t) && /UNESCO|Heritage/.test(r.label) ? 1 : 0);
+      if(score > top){ top = score; best = i; }   // ties go to the earlier sentence
+    });
+    if(best !== null){ used.add(best); r.note = clip(sents[best]); r.at = spot(base, sents[best]); }
+  }
+  /* events with an article of their own but nothing above: that article's opening sentence
+     (not for offices or spouses, whose openings define the office or describe the person) */
+  const need = rows.filter(r => !r.note && r.go && r.event).slice(0, 20);
+  if(need.length){
+    const k = await getJSON(W + "action=query&prop=extracts&exintro=1&explaintext=1&exchars=600&exlimit=20&redirects=1&titles="
+      + encodeURIComponent(need.map(r => r.go).join("|"))).catch(() => ({}));
+    const byTitle = {};
+    Object.values(k.query?.pages || {}).forEach(p => byTitle[p.title] = p.extract);
+    (k.query?.redirects || []).concat(k.query?.normalized || []).forEach(x => byTitle[x.from] = byTitle[x.to]);
+    need.forEach(r => { const first = sentencesOf(byTitle[r.go] || "")[0]; if(first) r.note = clip(first); });
+  }
+  return rows;
 }
 
 /* ---------- other libraries ---------- */
@@ -515,12 +581,15 @@ async function openTopic(title, others=[], query=""){
       $("refs").innerHTML = refs.map(r => `<li><span class="src">${esc(r.src)}</span><a href="${esc(r.u)}" ${ext}>${esc(r.t)}</a>${r.why ? `<span class="why">${esc(r.why)}</span>` : ""}</li>`).join("");
       $("best").hidden = false;
     }
+    const base = s.content_urls?.desktop?.page || "";
+    const drawTimeline = t => $("timeline").innerHTML = t.map(r => `<li${r.mile ? ` class="mile"` : ""}><span class="when">${esc(r.text)}</span><span class="what">${
+        r.go ? `<a data-go="${esc(r.go)}">${esc(r.label)}</a>` : esc(r.label)}${
+        r.tag ? `<span class="tl-tag">${esc(r.tag)}</span>` : ""}${r.until ? `<span class="until">until ${esc(r.until)}</span>` : ""}${
+        r.note ? `<span class="note">${esc(r.note)}${r.at ? ` <a href="${esc(r.at)}" ${ext}>In the article</a>` : ""}</span>` : ""}</span></li>`).join("");
     timeline(e).then(t => {
       if(my !== token || !t.length) return;
-      $("timeline").innerHTML = t.map(r => `<li${r.mile && !r.tag ? ` class="mile"` : ""}><span class="when">${esc(r.text)}</span><span class="what">${
-        r.go ? `<a data-go="${esc(r.go)}">${esc(r.label)}</a>` : esc(r.label)}${
-        r.tag ? `<span class="tl-tag">${esc(r.tag)}</span>` : ""}${r.until ? `<span class="until">until ${esc(r.until)}</span>` : ""}</span></li>`).join("");
-      $("timebox").hidden = false;
+      drawTimeline(t); $("timebox").hidden = false;
+      return context(name, base, t).then(c => { if(my === token) drawTimeline(c); });
     }).catch(()=>{});
     const rows = await facts(e.claims || {});
     if(my !== token || !rows.length) return;
