@@ -140,6 +140,15 @@ const collection = id => sparql(`SELECT ?film ?filmLabel (MIN(YEAR(?d)) AS ?y) (
   ?film wikibase:sitelinks ?sl . SERVICE wikibase:label { bd:serviceParam wikibase:language "${LANGS}". }
 } GROUP BY ?film ?filmLabel ORDER BY DESC(?pop) LIMIT 90`);
 
+/* Is an Internet Archive copy still there, with a video in it? Wikidata keeps links to items the Archive has
+   since taken down, so ask the Archive before showing a player or calling a film free to watch. */
+const iaCache = {};
+const iaPlayable = id => iaCache[id] ||= fetch("https://archive.org/metadata/" + encodeURIComponent(id), {signal: AbortSignal.timeout(10000)})
+  .then(r => r.ok ? r.json() : null)
+  /* if the Archive can't be asked, assume it's there; hide it only when the Archive says it's gone or has no video */
+  .then(j => j === null ? true : !!j.metadata && !j.is_dark && (j.files || []).some(f => /mpeg4|h\.264|ogg video|matroska|webm/i.test(f.format || "") || /\.(mp4|ogv|webm|mkv)$/i.test(f.name || "")))
+  .catch(() => true);
+
 /* ---------- Wikidata claims ---------- */
 const claimIds = (e, p) => (e.claims?.[p] || []).filter(c => c.rank !== "deprecated").map(c => c.mainsnak?.datavalue?.value?.id).filter(Boolean);
 const claimStr = (e, p) => e.claims?.[p]?.[0]?.mainsnak?.datavalue?.value;
@@ -357,7 +366,9 @@ async function personPage(ctx){
     const first = counts.slice().sort((a, b) => b[1] - a[1])[0][0];
     const start = counts.find(([r]) => r === "dir") && counts.find(([r]) => r === "dir")[1] >= 3 ? "dir" : first;
     /* free films: the Internet Archive copies Wikidata links to their films — these play on the film's page */
-    const free = films.filter(f => f.ia && f.title).sort((a, b) => a.year - b.year);
+    const listed = films.filter(f => f.ia && f.title).sort((a, b) => a.year - b.year).slice(0, 24);
+    const okay = await Promise.all(listed.map(f => iaPlayable(f.ia)));
+    const free = listed.filter((f, i) => okay[i]);
     if(free.length){
       await posters(free.map(f => f.title));
       if(alive(ctx)) $("free").innerHTML = `<h3 class="minor">Free to watch in full — ${free.length} ${free.length === 1 ? "film plays" : "films play"} on ${free.length === 1 ? "its" : "their"} page, from the Internet Archive</h3><div class="wall strip">${free.map(poster).join("")}</div>`;
@@ -435,8 +446,8 @@ async function filmPage(ctx){
     + (year ? section("s-year", `Also in ${year}`, "The year's best-known films") : "")
     + section("s-stills", "Images", "From Wikimedia Commons");
 
-  if(ia) show("s-play", `<div class="player"><iframe src="https://archive.org/embed/${encodeURIComponent(ia)}" title="${esc(name)}" allowfullscreen loading="lazy"></iframe></div>
-    <p class="chart-note"><a href="https://archive.org/details/${encodeURIComponent(ia)}" ${ext}>Open on the Internet Archive</a></p>`);
+  if(ia) iaPlayable(ia).then(ok => { if(ok && alive(ctx)) show("s-play", `<div class="player"><iframe src="https://archive.org/embed/${encodeURIComponent(ia)}" title="${esc(name)}" allowfullscreen loading="lazy"></iframe></div>
+    <p class="chart-note"><a href="https://archive.org/details/${encodeURIComponent(ia)}" ${ext}>Open on the Internet Archive</a></p>`); });
   const q = name.replace(/ \((\d{4} )?film\)$/, "");
   show("s-watch", linkRow("Stream & rent", streamLinks(q)) + linkRow("Look up", dbLinks(e)));
 
