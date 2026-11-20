@@ -41,6 +41,8 @@ a:hover{color:var(--accent-2)}
   display:flex;align-items:center;gap:14px;margin:0 0 6px}
 .label::after{content:"";flex:1;border-top:1px solid var(--line)}
 .sub{color:var(--muted);font-style:italic;font-size:16px;margin:0 0 18px}
+.sub .more{margin-left:.7em;font-style:normal;font-size:14px;white-space:nowrap}
+.sub .more::after{content:" →"}
 .status{color:var(--muted);font-style:italic;font-size:16px;margin:0}
 
 /* ---------- masthead ---------- */
