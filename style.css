@@ -780,3 +780,43 @@ button.dn-opt:hover .dn-go{transform:translateX(3px)}
   .drift-body .dn-grid{grid-template-columns:1fr;gap:10px}
   .double{margin:0 auto}
 }
+
+
+/* ---------- the front page as a gallery ---------- */
+/* the picture of the day: one wide, letterboxed frame with a museum placard under it */
+.today-pic{margin:40px 0 56px;text-align:center}
+.tp-frame{display:block;aspect-ratio:2.39/1;overflow:hidden;background:var(--plank);box-shadow:0 18px 40px -28px var(--shadow)}
+.tp-frame img{width:100%;height:100%;object-fit:cover;display:block;transition:transform 1.2s ease}
+.tp-frame:hover img{transform:scale(1.02)}
+@media (prefers-reduced-motion:reduce){.tp-frame img{transition:none}}
+.tp-placard{max-width:620px;margin:22px auto 0}
+.tp-kicker{margin:0;font:600 11px/1.2 var(--display);letter-spacing:.24em;text-transform:uppercase;color:var(--muted)}
+.tp-kicker span{color:var(--c)}
+.tp-kicker i{display:inline-block;width:6px;height:6px;background:var(--c);transform:rotate(45deg);margin:0 6px 1px 2px}
+.tp-title{margin:10px 0 0;font:600 clamp(28px,4.2vw,44px)/1.1 var(--display);letter-spacing:.08em}
+.tp-title a{color:var(--ink);text-decoration:none}
+.tp-title a:hover{color:var(--accent)}
+.tp-desc{margin:8px 0 0;color:var(--muted);font-style:italic;font-size:18px;text-wrap:balance}
+.tp-ctl{margin:14px 0 0;display:flex;justify-content:center;gap:22px;align-items:center;font-size:16px}
+.tp-open::after{content:" →"}
+.tp-ctl .linkish{font:inherit;letter-spacing:0;text-transform:none;color:var(--muted);background:none;border:0;min-height:0;padding:0;cursor:pointer;
+  text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.tp-ctl .linkish:hover{color:var(--ink);background:none}
+@media (max-width:760px){
+  .today-pic{margin:28px 0 40px}
+  .tp-frame{aspect-ratio:16/10;margin:0 -24px}
+}
+
+/* a picture on every wing card: wide subjects cropped, posters and covers as a strip of three */
+.wc-pic{display:block;margin:0 0 14px;overflow:hidden;background:var(--line)}
+.wc-pic.wide{position:relative;aspect-ratio:16/9}
+.wc-pic.wide img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .8s ease}
+.wc-pic.wide:hover img{transform:scale(1.03)}
+.wc-cap{position:absolute;left:0;bottom:0;padding:5px 9px;background:var(--bg);color:var(--muted);font-size:13px;font-style:italic}
+.wc-pic.strip{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:none;aspect-ratio:16/9}
+.wc-pic.strip a{display:block;overflow:hidden;background:var(--line)}
+.wc-pic.strip img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .8s ease}
+.wc-pic.strip a:hover img{transform:scale(1.04)}
+.wing-card{padding-top:18px}
+/* in Y2K the cards are glass panels; round the pictures to match */
+:root[data-theme="y2k"] .wc-pic,:root[data-theme="y2k"] .tp-frame{border-radius:10px}
