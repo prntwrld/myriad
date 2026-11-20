@@ -169,8 +169,8 @@ const honors = (list, info, n = 4) => {
   const BIG = /Academy|Oscar|Palme d|Golden Lion|Golden Bear|Grand Prix|BAFTA|Golden Globe|César|Silver Lion|Silver Bear|Kennedy Center|Lifetime Achievement/i;
   const named = list.filter(a => info[a.id]?.name).sort((a, b) => (BIG.test(info[b.id].name) - BIG.test(info[a.id].name)) || ((a.year || 9999) - (b.year || 9999)));
   if(!named.length) return "";
-  return `<p class="honors"><b>Recognition</b>${named.slice(0, n).map(a => `<span>${esc(info[a.id].name)}${a.year ? ` <i>${a.year}</i>` : ""}</span>`).join("")}${
-    named.length > n ? `<span class="more-h">and ${named.length - n} more</span>` : ""}</p>`;
+  return `<div class="honors"><b>Recognition</b><p class="h-list">${named.slice(0, n).map(a => `<span>${esc(info[a.id].name)}${a.year ? ` <i>${a.year}</i>` : ""}</span>`).join("")}${
+    named.length > n ? `<span class="more-h">and ${named.length - n} more</span>` : ""}</p></div>`;
 };
 const isHuman = e => claimIds(e, "P31").includes("Q5");
 const isFilm = e => !!e.claims?.P57 || claimIds(e, "P31").some(q => ["Q11424","Q24869","Q202866","Q93204","Q24862","Q226730","Q506240"].includes(q));

@@ -58,7 +58,8 @@ a:hover{color:var(--accent-2)}
 .theme{grid-column:2;grid-row:1;align-self:start}
 .chips{grid-column:1;margin-top:16px;font-size:16px;color:var(--muted)}
 .chips a{cursor:pointer}
-.chips a + a::before{content:"·";color:var(--muted);margin:0 10px;display:inline-block;text-decoration:none}
+.chips a{white-space:nowrap}
+.chips a:not(:last-child)::after{content:"·";color:var(--muted);margin:0 6px 0 10px;display:inline-block;text-decoration:none}
 
 .masthead::after{content:"";grid-column:1 / -1;border-bottom:3px double var(--rule);margin-top:28px}
 body.on .masthead::after{margin-top:16px}
@@ -88,7 +89,7 @@ main{padding-bottom:24px}
 
 /* ---------- home: the reading room ---------- */
 .room{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px 44px}
-.room h3{font:500 22px/1.2 "EB Garamond",serif;margin:18px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.room h3{font:500 22px/1.2 "EB Garamond",serif;margin:6px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line)}
 .room ul{list-style:none;margin:0;padding:0}
 .room li{margin:0 0 10px;font-size:17px;line-height:1.4}
 .room li a{font-weight:500}
@@ -515,7 +516,7 @@ button.ghost:hover{background:transparent;border-color:var(--ink);color:var(--in
   & .tag::before{content:"✦ ";color:#ff5fb4}
   & .chips{font-size:15px}
   & .chips a{font-weight:bold}
-  & .chips a + a::before{content:"✧";color:#b76cf0}
+  & .chips a:not(:last-child)::after{content:"✧";color:#b76cf0}
   & .masthead::after{border-bottom:0;height:8px;border-radius:8px;background:var(--chrome);
     box-shadow:0 1px 0 #fff inset,0 2px 6px rgba(30,60,140,.25)}
 
@@ -864,8 +865,10 @@ button.dn-opt:hover .dn-go{transform:translateX(3px)}
 :root:not([data-theme="y2k"]) .cine-hero .ch-ctl button.ghost:hover{background:rgba(243,239,230,.12);border-color:#f3efe6;color:#fff}
 
 /* ---------- recognition: awards under a topic's summary ---------- */
-.honors{margin:18px 0 0;display:flex;flex-wrap:wrap;gap:6px 8px;align-items:baseline;font-size:15.5px}
-.honors b{font:600 11px/1 var(--display);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-right:6px}
+.honors{margin:18px 0 0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 14px;align-items:start;font-size:15.5px}
+.honors b{font:600 11px/1 var(--display);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);padding-top:9px}
+.h-list{margin:0;display:flex;flex-wrap:wrap;gap:6px 8px;align-items:baseline}
+@media (max-width:560px){ .honors{grid-template-columns:1fr} .honors b{padding-top:0} }
 .honors span{padding:3px 10px;border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));background:var(--paper);color:var(--ink)}
 .honors span i{font-style:normal;color:var(--muted);font-variant-numeric:lining-nums;margin-left:3px}
 .honors .more-h{border:0;background:none;color:var(--muted);font-style:italic;padding:3px 0}
@@ -905,3 +908,23 @@ button.dn-opt:hover .dn-go{transform:translateX(3px)}
 .tr-name{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .trail .tr-name i{margin:0 6px 0 1px}
 :root[data-theme="y2k"] .trail a{border-radius:0;background:none;border:0}
+
+/* ---------- narrow windows ---------- */
+/* Now showing keeps enough height for its poster when the window is half-width on a computer */
+.ch-frame{min-height:300px}
+.ch-poster{min-height:220px}
+@media (max-width:1000px) and (min-width:761px){
+  .ch-frame{aspect-ratio:auto;padding-top:32px;padding-bottom:32px}
+  .ch-poster{height:260px}
+}
+/* a film's poster at the top shouldn't fill a phone screen */
+@media (max-width:760px){
+  .plate.is-poster{max-width:300px;margin:0 auto}
+  .drift-ctl button{min-height:38px;padding:0 16px;font-size:11px}
+}
+/* between phone and full width, the nav centres on two tidy lines instead of leaving one wing stranded */
+@media (max-width:1060px) and (min-width:761px){
+  .wings{justify-content:center;gap:6px 18px}
+  .wings .w-home{flex-basis:100%;text-align:center;margin:0 0 2px}
+  .wings .w-out{margin-left:0}
+}
