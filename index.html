@@ -20,7 +20,7 @@
     <input id="q" type="search" placeholder="Look up anything — Mount Rainier, beavers, jazz…" autocomplete="off" aria-label="Search">
     <button>Search</button>
   </form>
-  <button class="theme" id="theme" type="button" aria-label="Switch between light and dark" title="Light / dark">
+  <button class="theme" id="theme" type="button" aria-label="Switch theme" title="Theme: light, dark or Y2K">
     <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg>
   </button>
   <nav class="chips" id="chips" aria-label="Suggestions"></nav>
@@ -427,12 +427,24 @@ document.addEventListener("click", e => {
   const a = e.target.closest("[data-go]"); if(!a) return;
   e.preventDefault(); go(a.dataset.go);
 });
+/* the theme switch cycles light → dark → Y2K, and remembers the choice */
+const THEMES = ["light", "dark", "y2k"], THEME_NAME = {light:"Light", dark:"Dark", y2k:"Y2K"};
+const theme = () => {
+  const t = document.documentElement.dataset.theme;
+  return THEMES.includes(t) ? t : (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+};
+const labelTheme = () => {
+  const now = theme(), next = THEMES[(THEMES.indexOf(now) + 1) % THEMES.length];
+  $("theme").setAttribute("aria-label", `Theme: ${THEME_NAME[now]}. Switch to ${THEME_NAME[next]}`);
+  $("theme").title = `Theme: ${THEME_NAME[now]} (next: ${THEME_NAME[next]})`;
+};
 $("theme").addEventListener("click", () => {
-  const now = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-  const next = now === "dark" ? "light" : "dark";
+  const next = THEMES[(THEMES.indexOf(theme()) + 1) % THEMES.length];
   document.documentElement.dataset.theme = next;
   try { localStorage.setItem("myriad-theme", next); } catch(e){}
+  labelTheme();
 });
+labelTheme();
 $("chips").innerHTML = SUGGEST.map(t => `<a data-go="${esc(t)}">${esc(t)}</a>`).join("");
 $("room").innerHTML = Object.entries(BEST).map(([n, links]) => `<div><h3>${esc(n)}</h3><ul>${links.map(l =>
   `<li><a href="${esc(l.u)}" ${ext}>${esc(l.t)}</a><span>${esc(l.why)}</span></li>`).join("")}</ul></div>`).join("");
