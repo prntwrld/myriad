@@ -31,6 +31,7 @@ const daily = {
 /* ---------- the trail: what you've looked at, across all of Myriad ---------- */
 const TRAIL = "myriad-trail", TRAIL_MAX = 40;
 const trail = {
+  count: () => store.get(TRAIL, []).length,
   add(item){ /* {wing, title, name} */
     if(!item?.title) return;
     const list = store.get(TRAIL, []).filter(x => !(x.title === item.title && x.wing === item.wing));
@@ -49,47 +50,67 @@ const trail = {
 };
 
 /* ---------- Drift: a walk through connections ----------
-   drift(el, {start, next}) — start is a node; next(node, visited) returns [{node, why}] candidates.
-   A node is {key, name, href, img, sub, chips:[{wing, href}]}. "why" is the joining phrase ("shot by"). */
+   drift(el, {start, next, restart}) — start is a node; next(node, visited) returns [{node, why}] candidates.
+   A node is {key, kind, name, href, img, sub, chips:[{wing, href}]}. "why" is the joining phrase ("shot by").
+   Each step offers a few threads to pull, each saying how it connects; you pick one (or ask for a surprise),
+   and the path you've walked stays along the top so you can step back to any point. */
+const PER = 3;
 function drift(el, opts){
-  let path = [], pending = false, alts = [];
+  let path = [], options = null, shown = 0, msg = "", token = 0;
+  const ini = n => esc((n.name || "?").split(/\s+/).map(w => w[0]).slice(0, 2).join(""));
+  const shape = n => n.kind === "person" ? "round" : "tall";
+  const thumb = n => n.img ? `<img src="${esc(n.img)}" alt="" loading="lazy">` : `<span class="dc-ini">${ini(n)}</span>`;
   const nodeCard = (n, why) => `<div class="drift-card">
-      <a class="dc-img" href="${esc(n.href)}">${n.img ? `<img src="${esc(n.img)}" alt="">` : `<span class="dc-ini">${esc(n.name.split(/\s+/).map(w => w[0]).slice(0, 2).join(""))}</span>`}</a>
-      <div class="dc-text">${why ? `<p class="dc-why">${esc(why)}</p>` : `<p class="dc-why">Starting from</p>`}
+      <a class="dc-img ${shape(n)}" href="${esc(n.href)}">${thumb(n)}</a>
+      <div class="dc-text"><p class="dc-why">${why ? esc(why) : "Starting from"}</p>
         <h3><a href="${esc(n.href)}">${esc(n.name)}</a></h3>${n.sub ? `<p class="dc-sub">${esc(n.sub)}</p>` : ""}
-        ${n.chips?.length ? `<p class="in-wings">${n.chips.map(c => `<a href="${esc(c.href)}" style="--c:var(--c-${c.wing.id})"><i aria-hidden="true"></i>${esc(c.wing.name)}</a>`).join("")}</p>` : ""}</div></div>`;
-  const render = msg => {
+        ${n.chips?.length ? `<p class="in-wings">${n.chips.map(c => `<a href="${esc(c.href)}" style="--c:var(--c-${c.wing.id})"><i aria-hidden="true"></i>${esc(c.wing.name)}</a>`).join("")}</p>` : ""}
+        <p class="dc-open"><a href="${esc(n.href)}">Open the full page</a></p></div></div>`;
+  const choices = () => {
+    if(options === null) return `<div class="dn-grid loading">${`<div class="dn-opt ghost-opt"><span class="dn-img"></span><span class="dn-why">&nbsp;</span><span class="dn-name">&nbsp;</span></div>`.repeat(PER)}</div>`;
+    if(!options.length) return `<p class="drift-msg">${esc(msg || "A dead end — step back along the path, or start somewhere else.")}</p>`;
+    const set = options.slice(shown, shown + PER);
+    return `<div class="dn-grid">${set.map((c, k) => `<button type="button" class="dn-opt" data-pick="${shown + k}">
+        <span class="dn-img ${shape(c.node)}">${thumb(c.node)}</span>
+        <span class="dn-why">${esc(c.why)}</span><span class="dn-name">${esc(c.node.name)}</span>
+        ${c.node.sub ? `<span class="dn-sub">${esc(c.node.sub)}</span>` : ""}<span class="dn-go" aria-hidden="true">→</span></button>`).join("")}</div>`;
+  };
+  const render = () => {
     const last = path[path.length - 1];
-    el.innerHTML = `<ol class="drift-path">${path.map((s, i) => `${i ? `<li class="dp-why">${esc(s.why)}</li>` : ""}<li class="dp-node${i === path.length - 1 ? " now" : ""}"><button type="button" data-back="${i}">${esc(s.node.name)}</button></li>`).join("")}</ol>
+    el.innerHTML = `<ol class="drift-track" aria-label="Your path so far">${path.map((s, i) => `<li class="dt-step${i === path.length - 1 ? " now" : ""}">
+        ${i ? `<span class="dt-why">${esc(s.why)}</span>` : ""}
+        <button type="button" class="dt-node" data-back="${i}" title="Step back to ${esc(s.node.name)}"><span class="dt-img ${shape(s.node)}">${thumb(s.node)}</span><span class="dt-name">${esc(s.node.name)}</span></button></li>`).join("")}</ol>
       ${last ? nodeCard(last.node, last.why) : ""}
-      <div class="drift-ctl"><button type="button" data-step>${path.length > 1 ? "Next step" : "Start drifting"} →</button>
-        ${path.length > 1 ? `<button type="button" class="ghost" data-other>Another way</button>` : ""}
-        <button type="button" class="ghost" data-restart>Start somewhere else</button>
-        ${msg ? `<span class="drift-msg">${esc(msg)}</span>` : ""}</div>`;
+      <div class="drift-next"><h3 class="dn-head">Where to next?</h3>${choices()}</div>
+      <div class="drift-ctl">
+        ${options?.length > PER ? `<button type="button" class="ghost" data-more>Other threads ↻</button>` : ""}
+        ${options?.length ? `<button type="button" data-surprise>Surprise me ✦</button>` : ""}
+        <button type="button" class="ghost" data-restart>Start somewhere new</button></div>`;
   };
-  const step = async (replaceLast = false) => {
-    if(pending) return; pending = true;
-    const from = replaceLast ? path[path.length - 2] : path[path.length - 1];
-    render("Looking…");
+  const load = async () => {
+    const me = ++token; options = null; shown = 0; msg = ""; render();
+    let got = [];
     try {
-      if(!replaceLast || !alts.length){
-        const visited = new Set(path.map(s => s.node.key));
-        alts = (await opts.next(from.node, visited)).filter(c => !visited.has(c.node.key));
-      }
-      if(replaceLast) alts = alts.filter(c => c.node.key !== path[path.length - 1].node.key);
-      if(!alts.length){ pending = false; render("A dead end — try another way, or start somewhere else."); return; }
-      const c = alts.shift();
-      if(replaceLast) path[path.length - 1] = c; else path.push(c);
-      pending = false; render();
-    } catch(e){ pending = false; render("Couldn't reach the library just now — try again."); }
+      const visited = new Set(path.map(s => s.node.key));
+      got = (await opts.next(path[path.length - 1].node, visited)).filter(c => !visited.has(c.node.key));
+    } catch(e){ msg = "Couldn't reach the library just now — try again."; }
+    if(me !== token) return;
+    options = got; render();
   };
+  const go = c => { path.push(c); load(); };
   el.addEventListener("click", async e => {
-    if(e.target.closest("[data-step]")) step();
-    else if(e.target.closest("[data-other]")) step(true);
-    else if(e.target.closest("[data-restart]")){ pending = true; render("Finding somewhere new…"); try { path = [{node: await opts.restart()}]; alts = []; } catch(err){} pending = false; render(); }
-    else { const b = e.target.closest("[data-back]"); if(b){ path = path.slice(0, +b.dataset.back + 1); alts = []; render(); } }
+    const t = e.target;
+    const pick = t.closest("[data-pick]");
+    if(pick && options) return go(options[+pick.dataset.pick]);
+    if(t.closest("[data-surprise]") && options?.length) return go(options[Math.floor(Math.random() * options.length)]);
+    if(t.closest("[data-more]") && options){ shown = shown + PER >= options.length ? 0 : shown + PER; return render(); }
+    if(t.closest("[data-restart]")){ const me = ++token; options = null; render();
+      try { const n = await opts.restart(); if(me === token){ path = [{node: n}]; load(); } } catch(err){ options = []; msg = "Couldn't reach the library just now — try again."; render(); }
+      return; }
+    const b = t.closest("[data-back]");
+    if(b && +b.dataset.back < path.length - 1){ path = path.slice(0, +b.dataset.back + 1); load(); }
   });
-  const begin = node => { path = [{node}]; alts = []; render(); };
+  const begin = node => { path = [{node}]; load(); };
   begin(opts.start);
   return {begin};
 }

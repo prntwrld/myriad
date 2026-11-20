@@ -1,5 +1,5 @@
 /* Myriad — the wing landing pages. Every wing is drawn by the same template from the PAGES table below,
-   so the wings share one grammar: masthead, a featured shelf, the plan for the wing's topic pages,
+   so the wings share one grammar: masthead, a featured shelf,
    hand-picked rooms of links, and the sources. Only the accent colour and the content change. */
 {
 const {ROOT, esc} = window.Myriad;
@@ -220,6 +220,8 @@ const id = document.body.dataset.wing, P = PAGES[id], W = window.Myriad.WINGS.fi
 const topic = t => W.ready ? `./?t=${encodeURIComponent(t)}` : `${ROOT}?t=${encodeURIComponent(t)}`;
 document.title = `${W.name} — Myriad`;
 $("tag").textContent = P.tag;
+/* a wing that isn't open yet says so once, quietly, beside its name */
+if(!W.ready) document.querySelector(".logo")?.insertAdjacentHTML("afterend", `<span class="soon">Opening soon</span>`);
 $("q").placeholder = P.placeholder;
 $("chips").innerHTML = P.chips.map(t => `<a href="${topic(t)}">${esc(t)}</a>`).join("");
 /* for now a wing's search opens the topic on Myriad's main page, which links back to the wing */
@@ -231,16 +233,11 @@ const card = x => `<a class="item" href="${topic(x.t)}"><div class="obj"><span c
   <div class="placard"><div class="t">${esc((x.short || x.t).replace(/ \((\d{4} )?(film|video game|album|moon)\)$/,"").replace(/ \(Joni Mitchell album\)/,""))}</div>${x.m ? `<div class="m">${esc(x.m)}</div>` : ""}</div></a>`;
 $("main").innerHTML = `
   ${P.apod ? `<section class="section apod" id="apod" hidden><h2 class="label">Today's picture</h2><p class="sub">NASA's Astronomy Picture of the Day</p><div id="apodbox"></div></section>` : ""}
-  <section class="section shelf feature"><h2 class="label">${esc(F.label)}</h2><p class="sub">${esc(F.sub)}</p>
+  ${W.ready ? "" : `<section class="section shelf feature"><h2 class="label">${esc(F.label)}</h2><p class="sub">${esc(F.sub)}</p>
     <div class="row" id="feature">${items.map(card).join("")}</div>
-    ${F.watch ? `<p class="watch"><b>Where to watch</b>${F.watch.map(([t,u]) => `<a href="${esc(u)}" ${ext}>${esc(t)}</a>`).join("")}</p>` : ""}
-  </section>
+  </section>`}
   ${P.explore ? `<section class="section"><h2 class="label">${esc(P.explore.label)}</h2><p class="sub">${esc(P.explore.sub)}</p>
     <div class="toc">${P.explore.items.map(t => `<a class="tag-link" href="${topic(t)}">${esc(t)}</a>`).join("")}</div></section>` : ""}
-  <section class="section"><h2 class="label">Inside ${/^[AEIOU]/.test(W.name) ? "an" : "a"} ${esc(W.name)} page</h2><p class="sub">${W.ready
-      ? "What a topic in this wing shows"
-      : "What every topic in this wing will show — the plan, being built one wing at a time"}</p>
-    <ol class="plan">${P.plan.map(([t,d]) => `<li><b>${esc(t)}</b><span>${esc(d)}</span></li>`).join("")}</ol></section>
   <section class="section"><h2 class="label">Rooms</h2><p class="sub">Hand-picked places to go next</p>
     <div class="room">${Object.entries(P.rooms).map(([n, links]) => `<div><h3>${esc(n)}</h3><ul>${links.map(l =>
       `<li><a href="${esc(l.u)}" ${ext}>${esc(l.t)}</a><span>${esc(l.why)}</span></li>`).join("")}</ul></div>`).join("")}</div></section>`;

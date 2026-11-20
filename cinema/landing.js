@@ -71,11 +71,11 @@ const strip_ = async (el, films) => {
 const box = document.createElement("div");
 box.id = "discover";
 box.innerHTML = `
-  <section class="section" id="d-today" hidden><h2 class="label">Tonight's double feature</h2><p class="sub">Two films with a real connection — a new pair every day</p><div class="body"></div></section>
-  <section class="section" id="d-drift"><h2 class="label">Drift</h2><p class="sub">Wander from film to the people who made it and on to their other films, one step at a time</p><div class="body"><p class="status">Getting ready…</p></div></section>
+  <section class="section" id="d-today" hidden><h2 class="label">Tonight's double feature</h2><p class="sub" id="d-today-sub"></p><div class="body"></div></section>
+  <section class="section" id="d-drift"><h2 class="label">Drift</h2><p class="sub">Pull a thread — from a film to the people who made it, and on to what else they made</p><div class="body"><p class="status">Getting ready…</p></div></section>
   <section class="section" id="d-day" hidden><h2 class="label">On this day</h2><p class="sub" id="d-day-sub"></p><div class="body"></div></section>
   <section class="section" id="d-door" hidden><h2 class="label">Open a door</h2><p class="sub">Pick a decade and a country</p><div class="body"></div></section>
-  <section class="section" id="d-trail" hidden><h2 class="label">Your trail</h2><p class="sub">Where you've wandered lately, across Myriad — kept only in this browser <button type="button" class="linkish small" id="d-clear">Clear</button></p><div class="body"></div></section>`;
+  <section class="section" id="d-trail" hidden><h2 class="label">Your collection</h2><p class="sub"><span id="d-count"></span> — kept only in this browser <button type="button" class="linkish small" id="d-clear">Clear</button></p><div class="body"></div></section>`;
 $("main").prepend(box);
 /* a Shuffle button beside the search box */
 $("chips").insertAdjacentHTML("afterbegin", `<button type="button" class="shuffle" id="d-shuffle" title="Open a well-known film at random">Shuffle</button>`);
@@ -113,7 +113,7 @@ async function fromPerson(n){
   } GROUP BY ?f ?fLabel ?r ORDER BY DESC(?pop) LIMIT 24`);
   const cands = rows.map(r => ({r: r.r, node: filmNode(C.qid(r.f), C.artTitle(r.a), "", r.y), w: Math.sqrt(+r.pop)}));
   const out = []; while(cands.length){ const c = D.pick(cands, x => x.w); cands.splice(cands.indexOf(c), 1); out.push({node: c.node, why: ROLE_WHY.toFilm[c.r] || "and"}); }
-  await C.posters(out.slice(0, 6).map(c => c.node.title)); out.forEach(c => c.node.img = C.posterCache[c.node.title] || "");
+  await C.posters(out.slice(0, 12).map(c => c.node.title)); out.forEach(c => c.node.img = C.posterCache[c.node.title] || "");
   return out;
 }
 /* a well-known film at random (or by the day's seed): from the data file if it's there, else from the canon */
@@ -148,11 +148,26 @@ async function doubleFeature(j){
     const b = from[Math.floor(r() * Math.min(from.length, 8))];
     const film = j?.films.find(f => f.id === C.qid(b.b));
     const pair = {a, b: {id: C.qid(b.b), enwiki: C.artTitle(b.ab), name: strip(C.artTitle(b.ab)), year: film?.year || "", archive: film?.archive || ""},
-      why: ({dop: "Both shot by", mus: "Both scored by", wri: "Both written by", cast: "Both starring"})[b.r], who: C.label(b, "x"), whoId: C.qid(b.x)};
+      why: ROLES[b.r].why, role: b.r, who: C.label(b, "x"), whoId: C.qid(b.x)};
     D.daily.set("cinema-double", pair);
     return pair;
   }
   return null;
+}
+
+/* the person who joins the pair — their face and a line about them — and when each film came out */
+const ROLES = {dop: {why: "Same cinematographer", verb: "shot"}, mus: {why: "Same composer", verb: "scored"},
+  wri: {why: "Same writer", verb: "wrote"}, cast: {why: "Same face on screen", verb: "is in"}};
+async function about(pair){
+  if(pair.info) return;
+  try {
+    const [r] = await C.sparql(`SELECT (SAMPLE(?d) AS ?desc) (SAMPLE(?i) AS ?img) (MIN(YEAR(?da)) AS ?ya) (MIN(YEAR(?db)) AS ?yb) WHERE {
+      OPTIONAL { wd:${pair.whoId} schema:description ?d . FILTER(LANG(?d) = "en") }
+      OPTIONAL { wd:${pair.whoId} wdt:P18 ?i }
+      OPTIONAL { wd:${pair.a.id} wdt:P577 ?da } OPTIONAL { wd:${pair.b.id} wdt:P577 ?db } }`);
+    pair.info = {desc: r?.desc || "", img: r?.img ? C.commons(r.img, 300) : "", ya: +r?.ya || 0, yb: +r?.yb || 0};
+    D.daily.set("cinema-double", pair);
+  } catch(e){ pair.info = {}; }
 }
 
 /* ---------- On this day ---------- */
@@ -201,6 +216,7 @@ function door(j){
 function showTrail(){
   const html = D.trail.html(16), sec = $("d-trail");
   sec.hidden = !html; sec.querySelector(".body").innerHTML = html;
+  const n = D.trail.count(); $("d-count").textContent = `${n} ${n === 1 ? "entry" : "entries"} found`;
 }
 $("d-clear").onclick = () => { D.trail.clear(); showTrail(); };
 
@@ -228,10 +244,24 @@ let walker = null;
   const pair = await doubleFeature(j);
   if(pair){
     const sec = $("d-today"); sec.hidden = false;
-    await C.posters([pair.a.enwiki, pair.b.enwiki]);
+    $("d-today-sub").textContent = new Date().toLocaleDateString("en-US", {weekday: "long", month: "long", day: "numeric"}) + " — a new pair every day";
+    await Promise.all([C.posters([pair.a.enwiki, pair.b.enwiki]), about(pair)]);
     const one = f => `<div class="df-film">${card(f)}${f.archive ? `<a class="df-play" href="${esc(here(f.enwiki))}">▶ Watch it free</a>` : ""}</div>`;
-    sec.querySelector(".body").innerHTML = `<div class="double">${one(pair.a)}<div class="df-why"><span class="amp">&amp;</span>
-      <p>${esc(pair.why)} <a href="${esc(here(pair.who))}">${esc(pair.who)}</a></p></div>${one(pair.b)}</div>`;
+    const R = ROLES[pair.role] || ROLES.cast, i = pair.info || {};
+    const gap = i.ya && i.yb ? Math.abs(i.ya - i.yb) : null;
+    const when = gap === null ? "" : gap === 0 ? ", the same year" : gap === 1 ? ", a year apart" : `, ${gap} years apart`;
+    sec.querySelector(".body").innerHTML = `<div class="double">${one(pair.a)}
+      <div class="df-why">
+        <a class="df-face" href="${esc(here(pair.who))}">${i.img ? `<img src="${esc(i.img)}" alt="">` : `<span>${esc(pair.who.split(/\s+/).map(w => w[0]).slice(0, 2).join(""))}</span>`}</a>
+        <p class="df-role">${esc(pair.why)}</p>
+        <p class="df-story"><a href="${esc(here(pair.who))}">${esc(pair.who)}</a> ${esc(R.verb)} both${esc(when)}.</p>
+        ${i.desc ? `<p class="df-desc">${esc(i.desc[0].toUpperCase() + i.desc.slice(1))}</p>` : ""}
+        <button type="button" class="df-drift" id="df-drift">Drift from ${esc(pair.who.split(" ").slice(-1)[0])} →</button>
+      </div>${one(pair.b)}</div>`;
+    $("df-drift").onclick = () => {
+      walker?.begin({key: pair.whoId, kind: "person", id: pair.whoId, name: pair.who, title: pair.who, href: here(pair.who), img: i.img || "", sub: i.desc || ""});
+      $("d-drift").scrollIntoView({behavior: "smooth", block: "start"});
+    };
     if(!start) start = await withPoster(filmNode(pair.a.id, pair.a.enwiki, pair.a.name, pair.a.year));
   }
   if(!start) start = await startFrom();
