@@ -80,8 +80,8 @@ function drift(el, opts){
     el.innerHTML = `<ol class="drift-track" aria-label="Your path so far">${path.map((s, i) => `<li class="dt-step${i === path.length - 1 ? " now" : ""}">
         ${i ? `<span class="dt-why">${esc(s.why)}</span>` : ""}
         <button type="button" class="dt-node" data-back="${i}" title="Step back to ${esc(s.node.name)}"><span class="dt-img ${shape(s.node)}">${thumb(s.node)}</span><span class="dt-name">${esc(s.node.name)}</span></button></li>`).join("")}</ol>
-      ${last ? nodeCard(last.node, last.why) : ""}
-      <div class="drift-next"><h3 class="dn-head">Where to next?</h3>${choices()}</div>
+      <div class="drift-body">${last ? nodeCard(last.node, last.why) : ""}
+      <div class="drift-next"><h3 class="dn-head">Where to next?</h3>${choices()}</div></div>
       <div class="drift-ctl">
         ${options?.length > PER ? `<button type="button" class="ghost" data-more>Other threads ↻</button>` : ""}
         ${options?.length ? `<button type="button" data-surprise>Surprise me ✦</button>` : ""}
