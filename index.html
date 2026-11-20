@@ -10,9 +10,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=20261120e">
 </head>
 <body>
+<script src="site.js?v=20261120e"></script>
 <header class="wrap masthead">
   <a class="logo" id="logo" href="./">Myriad<span class="dot">.</span></a>
   <p class="tag">Clean topic pages from the world's open libraries. No ads, no clutter.</p>
@@ -29,6 +30,16 @@
 <main class="wrap">
   <div id="home">
     <section class="section">
+      <h2 class="label">The wings</h2>
+      <p class="sub">Rooms that go deeper on one kind of thing</p>
+      <div class="wing-cards" id="wingcards"></div>
+    </section>
+    <section class="section" id="trailbox" hidden>
+      <h2 class="label">Your trail</h2>
+      <p class="sub">Where you've wandered lately, across Myriad — kept only in this browser</p>
+      <div id="trail"></div>
+    </section>
+    <section class="section">
       <h2 class="label">The reading room</h2>
       <p class="sub">Hand-picked starting points, by subject.</p>
       <div class="room" id="room"></div>
@@ -43,19 +54,21 @@
         <div class="facts" id="facts" hidden><h2 class="label">Quick facts</h2><dl id="factlist"></dl></div>
       </aside>
     </div>
+    <section class="section" id="timebox" hidden><h2 class="label">Timeline</h2><p class="sub">Dates from Wikidata, context from the Wikipedia article</p><ol class="timeline" id="timeline"></ol></section>
     <section class="section" id="tocbox" hidden><h2 class="label">In the article</h2><p class="sub">Jump to a section on Wikipedia</p><div class="toc" id="toc"></div></section>
     <section class="section" id="best" hidden><h2 class="label">Further reading</h2><p class="sub">Trusted sources with a page on exactly this topic</p><ul class="refs" id="refs"></ul></section>
     <section class="section" id="mapbox" hidden><h2 class="label">On the map</h2><p class="sub" id="coords"></p><div id="map"></div></section>
     <section class="section" id="relbox" hidden><h2 class="label">Related topics</h2><p class="sub">Keep exploring</p><div class="toc" id="rel"></div></section>
-    <section class="section shelf lib"><h2 class="label">Free books</h2><p class="sub">Public-domain books, free to read in full — Open Library &amp; Project Gutenberg</p><div class="row" id="books"></div></section>
-    <section class="section shelf lib"><h2 class="label">Museum</h2><p class="sub">The Metropolitan Museum of Art — open access</p><div class="row" id="met"></div></section>
-    <section class="section shelf lib"><h2 class="label">Archive</h2><p class="sub">Internet Archive — books, film, audio</p><div class="row" id="ia"></div></section>
-    <section class="section shelf lib"><h2 class="label">Photographs</h2><p class="sub">Library of Congress — prints &amp; photographs</p><div class="row" id="loc"></div></section>
+    <section class="section shelf lib"><h2 class="label">Free books</h2><p class="sub">Public-domain books, free to read in full — Open Library &amp; Project Gutenberg<a class="more" id="books-more" hidden target="_blank" rel="noopener">See all results</a></p><div class="row" id="books"></div></section>
+    <section class="section shelf lib"><h2 class="label">Museum</h2><p class="sub">The Metropolitan Museum of Art — open access<a class="more" id="met-more" hidden target="_blank" rel="noopener">See all results</a></p><div class="row" id="met"></div></section>
+    <section class="section shelf lib"><h2 class="label">Archive</h2><p class="sub">Internet Archive — books, film, audio<a class="more" id="ia-more" hidden target="_blank" rel="noopener">See all results</a></p><div class="row" id="ia"></div></section>
+    <section class="section shelf lib"><h2 class="label">Photographs</h2><p class="sub">Library of Congress — prints &amp; photographs<a class="more" id="loc-more" hidden target="_blank" rel="noopener">See all results</a></p><div class="row" id="loc"></div></section>
   </div>
 </main>
 
 <footer class="wrap">Myriad draws on free public collections: Wikipedia, Wikidata, OpenStreetMap, Open Library, Project Gutenberg, The Met, the Internet Archive, and the Library of Congress. Text from Wikipedia is available under CC BY-SA.</footer>
 
+<script src="discover.js?v=20261120e"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 {
@@ -150,6 +163,8 @@ const item = ({u,t,m,img}, shelf) => `<a class="item" href="${esc(u)}" ${ext}>
   <div class="obj">${img ? `<img loading="lazy" src="${esc(img)}" alt="" data-t="${esc(t)}">` : cover(t, shelf)}</div>
   <div class="placard"><div class="t">${esc(t)}</div>${m?`<div class="m">${esc(m)}</div>`:""}</div></a>`;
 const fill = (el, items) => { $(el).innerHTML = items.length ? items.map(x => item(x, el)).join("") : `<p class="status">Nothing found on this shelf.</p>`; };
+/* each shelf ends with a link to the library's own search page for the same search, to see everything it found */
+const more = (el, url) => { const a = $(el + "-more"); a.hidden = !url; if(url) a.href = url; };
 const topicLink = t => `<a class="tag-link" data-go="${esc(t)}">${esc(t)}</a>`;
 let token = 0, map = null;
 
@@ -179,16 +194,20 @@ async function entity(qid){
   const j = await getJSON(WD + "action=wbgetentities&props=claims|sitelinks/urls&sitefilter=simplewiki|enwikivoyage|enwikiquote&ids=" + qid);
   return j.entities?.[qid] || {};
 }
+/* a Wikidata date at its own precision: "April 12, 1861", "1687", "400 CE", "5th century BCE" */
+const ordinal = n => n + (n % 100 > 10 && n % 100 < 14 ? "th" : ({1:"st",2:"nd",3:"rd"}[n % 10] || "th"));
 function fmtTime(v){
   const m = /^([+-])(\d+)-(\d\d)-(\d\d)/.exec(v.time); if(!m) return "";
-  const y = Number(m[2]), bce = m[1] === "-" ? " BCE" : "";
+  const y = Number(m[2]), bce = m[1] === "-" ? " BCE" : "", era = bce || (y < 1000 ? " CE" : "");
+  /* setUTCFullYear, because Date.UTC reads years 0–99 as 1900–1999 */
+  const day = (mo, d) => { const t = new Date(Date.UTC(2000, mo-1, d)); t.setUTCFullYear(y); return t; };
   if(v.precision >= 11 && m[3] !== "00" && m[4] !== "00")
-    return new Date(Date.UTC(y, m[3]-1, m[4])).toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric",timeZone:"UTC"}) + bce;
+    return day(m[3], m[4]).toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric",timeZone:"UTC"}) + era;
   if(v.precision === 10 && m[3] !== "00")
-    return new Date(Date.UTC(y, m[3]-1, 1)).toLocaleDateString(undefined,{year:"numeric",month:"long",timeZone:"UTC"}) + bce;
-  if(v.precision === 8) return Math.floor(y/10)*10 + "s" + bce;
-  if(v.precision === 7) return (Math.floor((y-1)/100)+1) + "th century" + bce;
-  return y + bce;
+    return day(m[3], 1).toLocaleDateString(undefined,{year:"numeric",month:"long",timeZone:"UTC"}) + era;
+  if(v.precision === 8) return Math.floor(y/10)*10 + "s" + era;
+  if(v.precision === 7) return ordinal(Math.floor((y-1)/100)+1) + " century" + era;
+  return y + era;
 }
 function pickClaims(list){
   const good = list.filter(c => c.rank !== "deprecated" && c.mainsnak?.datavalue);
@@ -238,57 +257,270 @@ function sources(e, name){
   return {read, refs};
 }
 
+/* ---------- Timeline: a short chronology built from Wikidata's dates ----------
+   Milestones are the topic's own dates (born, founded, begins, ends…). Events are things the topic's
+   statements name, dated by the statement ("significant event: explosion, 1687") or, failing that,
+   by the thing's own dates (the battles a war "has as parts"). For a war or other span of time, the
+   battles and incidents that say they are "part of" it are found too. The most notable events
+   (most Wikipedia editions) fill the rows left after the milestones. Shown only with 3+ dated rows. */
+const MILESTONES = [["P569","Born"],["P571","Founded"],["P1249","First recorded"],["P1619","Opens"],["P580","Begins"],
+  ["P585","Takes place"],["P582","Ends"],["P3999","Closes"],["P576","Comes to an end"],["P570","Dies"]];
+const an = l => (/^[aeiou]/i.test(l) ? "an " : "a ") + l;
+/* statements that name an event, and how to word it; "own" ones may be dated by the event itself
+   (and are linked only when they are a specific happening, not a general idea like "explosion"),
+   "link" ones link to the thing's own Wikipedia page */
+const HAPPENINGS = {
+  P793: {say: l => l, own: true},               // significant event
+  P527: {say: l => l, own: true, brief: true},  // has part(s): battles of a war; theatres lasting years are left out
+  P31:  {say: l => "Becomes " + an(l)},          // instance of, from a date: a temple that became a church
+  P39:  {say: l => "Becomes " + l, link: true},  // position held
+  P26:  {say: l => "Marries " + l, link: true},  // spouse
+  P166: {say: l => "Receives the " + l},         // award received
+  P1435:{say: l => "Listed as " + l}             // heritage designation
+};
+const TIMELINE_MAX = 9;
+const timeOf = snaks => (snaks || []).find(s => s.datavalue?.type === "time")?.datavalue.value;
+/* of several dates for the same moment, the most precise ("1861" vs "April 12, 1861") */
+const sharpest = (...vs) => vs.filter(Boolean).sort((a, b) => b.precision - a.precision)[0];
+const ownTime = (claims, pid) => timeOf((claims[pid] ? pickClaims(claims[pid]) : []).map(c => c.mainsnak));
+function when(v){
+  const m = v && /^([+-])(\d+)-(\d\d)-(\d\d)/.exec(v.time); if(!m) return null;
+  return {key: (m[1] === "-" ? -1 : 1) * Number(m[2]) * 1e4 + Number(m[3]) * 100 + Number(m[4]), text: fmtTime(v)};
+}
+async function timeline(e){
+  const c = e.claims || {}, built = c.P84 || c.P149;   // has an architect or a style: a building
+  const rows = [];
+  for(const [pid, what] of MILESTONES){
+    if(pid === "P585" && (c.P580 || c.P582)) continue;   // a span already has its own start and end
+    const d = when(ownTime(c, pid)); if(!d) continue;
+    rows.push({...d, label: built && pid === "P571" ? "Built" : built && pid === "P576" ? "Destroyed" : what, mile: true, rank: Infinity});
+  }
+  const events = [];
+  for(const [pid, h] of Object.entries(HAPPENINGS)) for(const st of (c[pid] || [])){
+    if(pid === "P31" && !built) continue;   // "historical country from 1453" says little; "a mosque from 1460" does
+    const id = st.rank !== "deprecated" && st.mainsnak?.datavalue?.value?.id; if(!id) continue;
+    const q = st.qualifiers || {}, start = sharpest(timeOf(q.P585), timeOf(q.P580));
+    if(start || h.own) events.push({id, h, start, end: timeOf(q.P582)});
+  }
+  /* a span of time (a war, a revolution): also the dated things that are "part of" it */
+  if(c.P580 && e.id){
+    const j = await getJSON(WD + "action=query&list=search&srnamespace=0&srlimit=15&srsearch=" + encodeURIComponent("haswbstatement:P361=" + e.id)).catch(() => ({}));
+    (j.query?.search || []).forEach(s => events.push({id: s.title, h: HAPPENINGS.P527}));
+  }
+  const seen = new Set(), list = events.filter(x => x.id !== e.id && !seen.has(x.id) && seen.add(x.id));
+  if(!list.length) return finish(rows);
+  /* labels, Wikipedia titles and notability (number of Wikipedias) for every event, plus the claims of those
+     that may carry their own dates */
+  const ask = (ids, props) => ids.length ? getJSON(WD + "action=wbgetentities&languages=en&props=" + props + "&ids=" + ids.join("|")).then(j => j.entities || {}) : {};
+  const plain = list.filter(x => !x.h.own).slice(0, 50), own = list.filter(x => x.h.own).slice(0, 25);
+  const [a, b] = await Promise.all([ask(plain.map(x => x.id), "labels|sitelinks"), ask(own.map(x => x.id), "labels|sitelinks|claims")]);
+  for(const x of [...plain, ...own]){
+    const ent = a[x.id] || b[x.id], label = ent?.labels?.en?.value; if(!label) continue;
+    const ec = ent.claims || {};
+    /* a part with only an inception date ("Great Pyramid of Giza — built") counts for a site without dates of its own,
+       not for an empire, whose provinces and colonies would crowd out its events */
+    const happened = sharpest(ownTime(ec, "P585"), ownTime(ec, "P580")), made = !x.start && !happened && !c.P580 && !c.P571 && ownTime(ec, "P571");
+    const start = when(x.start || happened || made);
+    const end = when(x.start ? x.end : ownTime(ec, "P582") || ownTime(ec, "P576"));
+    if(!start) continue;
+    const linked = x.h.link || (x.h.own && (happened || made));
+    if(x.h.brief && end && end.key - start.key >= 1e4) continue;   // a part lasting a year or more is a phase, not an event
+    rows.push({...start, label: x.h.say(label).replace(/^./, ch => ch.toUpperCase()), go: linked ? ent.sitelinks?.enwiki?.title : "",
+      until: end && end.text !== start.text ? end.text : "", rank: Object.keys(ent.sitelinks || {}).length,
+      event: !!x.h.own, person: x.h === HAPPENINGS.P26,
+      tag: made ? (ec.P84 || ec.P149 || ec.P186 || ec.P2048 ? "Built" : "Established") : ""});   // architect, style, material or height: a structure
+  }
+  return finish(rows);
+}
+/* keep the milestones and the most notable events, in date order; things on the same date share a row
+   ("Battle of Fort Sumter — begins") */
+function finish(rows){
+  const keep = rows.map((r, i) => ({...r, i})).sort((p, q) => q.rank - p.rank || p.i - q.i).slice(0, TIMELINE_MAX)
+    .sort((p, q) => p.key - q.key || p.i - q.i);
+  const out = [];
+  for(const r of keep){
+    const last = out.at(-1);
+    const pure = x => x.mile && !x.go;   // one of the topic's own dates, not yet sharing its row
+    if(last && last.text === r.text && pure(last) !== pure(r) && (pure(last) || pure(r)) && !(last.go && r.go)){
+      const [m, ev] = pure(last) ? [last, r] : [r, last];
+      out[out.length - 1] = {...ev, tag: m.label, mile: true};
+    } else if(last && pure(last) && pure(r) && Math.trunc(last.key / 1e4) === Math.trunc(r.key / 1e4)){
+      if(r.text.length > last.text.length) out[out.length - 1] = r;   // "Ends 395" and "Comes to an end January 17, 395": keep the exact one
+    } else if(!(last && last.text === r.text && last.label === r.label)) out.push(r);
+  }
+  return out.length >= 3 ? out : [];
+}
+/* Context for each row: the sentence in the topic's own Wikipedia article that best mentions the row's date
+   or event ("In 1687, a Venetian bombardment ignited the gunpowder stored inside…"), linked to that spot
+   in the article. A row with an article of its own and no such sentence gets that article's first sentence. */
+const CUES = {Born:/\bborn\b/, Dies:/\b(died|death|killed|assassinat)/, Founded:/\b(found|establish|creat)/,
+  Built:/\b(built|construct|complet|erect)/, Destroyed:/\b(destr|demoli|ruin)/, Begins:/\b(began|begin|start|outbreak)/,
+  Ends:/\b(ended|end of|surrender|conclu)/, "Comes to an end":/\b(destr|ended|fall|fell|decline|collapse|dissol)/,
+  Opens:/\bopen/, Closes:/\bclos/};
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const ORD = ["","first","second","third","fourth","fifth","sixth","seventh","eighth","ninth","tenth","eleventh","twelfth"];
+function datePattern(r){
+  const y = Math.abs(Math.trunc(r.key / 1e4)), bc = r.key < 0 ? "\\s*(?:BC|BCE|B\\.C\\.)" : "(?!\\s*(?:BC|BCE|B\\.C\\.))";
+  const c = /^(\d+)\w\w century/.exec(r.text);
+  if(c) return new RegExp(`\\b(?:${c[1]}(?:st|nd|rd|th)|${ORD[c[1]] || "@"})[- ]century${r.key < 0 ? "\\s*(?:BC|BCE)" : ""}`, "i");
+  /* a date with a month must name it: "April 1861", "April 12, 1861", "12 April 1861" */
+  const mo = /^\D*\d+$/.test(r.text) ? "" : MONTHS[Math.floor(Math.abs(r.key) / 100) % 100 - 1];
+  if(mo) return new RegExp(`\\b${mo}\\s+(?:\\d{1,2},?\\s+)?${y}\\b|\\b\\d{1,2}\\s+${mo}\\s+${y}\\b`);
+  return new RegExp(`\\b${y}${bc}\\b`, r.key < 0 ? "i" : "");
+}
+/* split prose into sentences, but not after "a.k.a.", "U.S.", "Gen." and the like */
+const sentencesOf = text => text.replace(/^=+ .* =+$/gm, "\n")
+  .split(/\n+|(?<=[.!?])(?<!\b(?:[A-Za-z]\.){2,3})(?<!\b(?:Mr|Mrs|Dr|St|Gen|Col|Lt|Capt|Sgt|Jr|Sr|Co|Inc|vs|c|ca|No)\.)\s+(?=[A-Z"“(])/)
+  .map(x => x.trim()).filter(x => x.length > 30);
+/* a snippet without its asides ("(Arabic: …, romanized: …)") and cut at about 230 characters */
+const clip = (t, n=230) => { t = t.replace(/\s*\([^()]*\)/g, "").replace(/\s+([,.;])/g, "$1"); return t.length > n ? t.slice(0, t.lastIndexOf(" ", n)) + "…" : t; };
+const spot = (base, sentence) => base + "#:~:text=" + encodeURIComponent(sentence.split(/\s+/).slice(0, 6).join(" ")).replace(/-/g, "%2D");
+async function context(name, base, rows){
+  const j = await getJSON(W + "action=query&prop=extracts&explaintext=1&redirects=1&titles=" + encodeURIComponent(name)).catch(() => ({}));
+  const sents = sentencesOf(Object.values(j.query?.pages || {})[0]?.extract || "");
+  const used = new Set();
+  for(const r of rows){
+    /* the event's own name, as an article would say it: "Battle of Antietam" → "Antietam" */
+    const what = r.person ? r.label.split(" ").slice(1, 3).join(" ")   // "Marries Mary Todd Lincoln" → "Mary Todd"
+      : r.go ? r.go.replace(/ \(.*\)$/, "").replace(/^(?:(?:First|Second|Third) )?(?:Battle|Siege|Sack|Fall|Treaty|Destruction|Burning|Founding|Assassination|Death|Coronation) of (?:the )?/i, "") : "";
+    const date = datePattern(r);
+    const cue = CUES[r.tag || r.label], named = what ? new RegExp("\\b" + what.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") : null;
+    let best = null, top = 0;
+    sents.forEach((t, i) => {
+      /* it must give the date, and for an event with an article of its own, also name it */
+      if(used.has(i) || !date.test(t) || (named && !named.test(t))) return;
+      const score = 1 + (cue?.test(t.toLowerCase()) ? 1 : 0) + (/\bUNESCO|World Heritage/.test(t) && /UNESCO|Heritage/.test(r.label) ? 1 : 0);
+      if(score > top){ top = score; best = i; }   // ties go to the earlier sentence
+    });
+    if(best !== null){ used.add(best); r.note = clip(sents[best]); r.at = spot(base, sents[best]); }
+  }
+  /* events with an article of their own but nothing above: that article's opening sentence
+     (not for offices or spouses, whose openings define the office or describe the person) */
+  const need = rows.filter(r => !r.note && r.go && r.event).slice(0, 20);
+  if(need.length){
+    const k = await getJSON(W + "action=query&prop=extracts&exintro=1&explaintext=1&exchars=600&exlimit=20&redirects=1&titles="
+      + encodeURIComponent(need.map(r => r.go).join("|"))).catch(() => ({}));
+    const byTitle = {};
+    Object.values(k.query?.pages || {}).forEach(p => byTitle[p.title] = p.extract);
+    (k.query?.redirects || []).concat(k.query?.normalized || []).forEach(x => byTitle[x.from] = byTitle[x.to]);
+    need.forEach(r => { const first = sentencesOf(byTitle[r.go] || "")[0]; if(first) r.note = clip(first); });
+  }
+  return rows;
+}
+
 /* ---------- other libraries ---------- */
+/* A shelf searches for the topic's name plus a word or two saying which meaning is wanted, so that
+   "Mercury (planet)" finds the planet rather than the element, the god or Freddie Mercury.
+   The words come from the bracketed qualifier in the title ("planet") and from the head noun of
+   Wikipedia's short description ("Semiaquatic rodent" → "rodent", "Largest living species of dolphin" → "dolphin").
+   If the sharper search finds nothing, the shelf searches the plain name instead.
+   Each search returns {items, url}: the shelf's things, and the library's own results page for that search. */
+const GENERIC = /^(species|genus|family|type|kind|group|member|form|class|order|variety|breed|term|name|word|concept|one|part|series|set|list|thing|any|branch|subfamily|suborder|clade)$/;
+function meaning(title, desc, name){
+  const words = [];
+  const qual = /\(([^)]+)\)\s*$/.exec(title)?.[1];
+  if(qual) words.push(qual.replace(/[\d–-]+/g, " ").trim().split(/\s+/).pop());
+  if(desc){
+    const d = desc.toLowerCase();
+    let head = d.split(/[,;:(]| (?:in|of|from|with|on|at|by|for|to|that|which|who|whose|and|or|between|near|based|located|born)\b/)[0]
+      .trim().split(/\s+/).pop();
+    if(GENERIC.test(head)) head = / of (?:the |a |an )?([a-z-]+)/.exec(d)?.[1];
+    if(head) words.push(head);
+  }
+  const own = new Set(name.toLowerCase().split(/\s+/));
+  return [...new Set(words.map(w => (w || "").toLowerCase().replace(/[^a-z-]/g, "")))].filter(w => w.length > 2 && !own.has(w));
+}
+/* "planets" and "planet" both match "planet": a word's stem for wildcard searches and matching */
+const stem = w => w.length > 4 && /[^s]s$/.test(w) ? w.slice(0, -1) : w;
+const mentions = (text, words) => words.some(w => new RegExp("\\b" + stem(w.toLowerCase()).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i").test(text));
+async function sharpThenPlain(fn, name, words){
+  if(words.length){ const r = await fn(name, words); if(r.items.length) return r; }
+  return fn(name, []);
+}
+
 /* Books: Open Library's public-domain scans (fast, free to read in full on the Internet Archive).
-   Gutendex (Project Gutenberg) is the backup, with a short time limit because it is often slow. */
-async function books(q){
-  try { const r = await openLibrary(q); if(r.length) return r; } catch(e){}
-  return gutenberg(q);
+   Gutendex (Project Gutenberg) is the backup, tried once with the plain name and a short time limit,
+   because it is often slow or down: if it fails after Open Library answered, the shelf is simply empty. */
+async function books(name, words){
+  let olError = null;
+  try { const r = await sharpThenPlain(openLibrary, name, words); if(r.items.length) return r; } catch(e){ olError = e; }
+  try { return await gutenberg(name); } catch(e){
+    if(olError) throw olError;
+    return {items: [], url: openLibraryUrl(name, [])};
+  }
 }
-async function openLibrary(q){
-  const words = q.replace(/[:"()\[\]{}]/g, " ");
+const olWords = (name, words) => name.replace(/[:"()\[\]{}]/g, " ") + (words.length ? ` (${words.join(" OR ")})` : "") + " AND ebook_access:public";
+const openLibraryUrl = (name, words) => "https://openlibrary.org/search?mode=everything&q=" + encodeURIComponent(olWords(name, words));
+async function openLibrary(name, words){
   const j = await getJSON("https://openlibrary.org/search.json?limit=6&fields=title,author_name,first_publish_year,cover_i,ia&q="
-    + encodeURIComponent(words + " AND ebook_access:public"), 10000);
-  return (j.docs||[]).filter(b => b.ia?.length).map(b => ({u:`https://archive.org/details/${b.ia[0]}`, t:b.title,
+    + encodeURIComponent(olWords(name, words)), 10000);
+  return {url: openLibraryUrl(name, words), items: (j.docs||[]).filter(b => b.ia?.length).map(b => ({u:`https://archive.org/details/${b.ia[0]}`, t:b.title,
     m:[(b.author_name||[])[0], b.first_publish_year].filter(Boolean).join(" · "),
-    img: b.cover_i ? `https://covers.openlibrary.org/b/id/${b.cover_i}-M.jpg` : ""}));
+    img: b.cover_i ? `https://covers.openlibrary.org/b/id/${b.cover_i}-M.jpg` : ""}))};
 }
-async function gutenberg(q){
-  const j = await getJSON("https://gutendex.com/books/?search=" + encodeURIComponent(q), 8000, 1);
-  return (j.results||[]).slice(0,6).map(b => ({u:`https://www.gutenberg.org/ebooks/${b.id}`, t:b.title,
-    m:(b.authors||[]).map(a=>a.name).join(", "), img:b.formats?.["image/jpeg"]}));
+async function gutenberg(name){
+  const j = await getJSON("https://gutendex.com/books/?search=" + encodeURIComponent(name), 8000, 1);
+  return {url: "https://www.gutenberg.org/ebooks/search/?query=" + encodeURIComponent(name),
+    items: (j.results||[]).slice(0,6).map(b => ({u:`https://www.gutenberg.org/ebooks/${b.id}`, t:b.title,
+    m:(b.authors||[]).map(a=>a.name).join(", "), img:b.formats?.["image/jpeg"]}))};
 }
-async function met(q){
+
+/* Museum: the Met's search is loose (it also matches artists' names and other fields), so an object
+   stays on the shelf only if its title or subject tags name the topic, or, for the sharper search,
+   the meaning ("Planets"). An artist called John van Beaver no longer lands on the Beaver shelf.
+   A name that appears only in brackets in a title (usually a source, "(John Beaver, 1725)") ranks last,
+   and no artist gets more than two places. */
+async function met(name, words){
+  const q = [name, ...words].join(" ");
   /* v1.1 search (the old v1 search was retired in Oct 2026 and now returns 410 Gone) */
-  const s = await getJSON("https://collectionapi.metmuseum.org/public/collection/v1.1/search?hasImages=true&limit=10&q=" + encodeURIComponent(q));
-  const objs = await Promise.all((s.objectIDs||[]).slice(0,10).map(id =>
+  const s = await getJSON("https://collectionapi.metmuseum.org/public/collection/v1.1/search?hasImages=true&limit=20&q=" + encodeURIComponent(q));
+  const objs = await Promise.all((s.objectIDs||[]).slice(0,20).map(id =>
     getJSON(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${id}`).catch(()=>null)));
-  return objs.filter(o => o && o.primaryImageSmall).slice(0,6).map(o => ({u:o.objectURL, t:o.title,
-    m:[o.artistDisplayName,o.objectDate].filter(Boolean).join(" · "), img:o.primaryImageSmall}));
+  const want = words.length ? words : [name], perArtist = {};
+  const scored = objs.filter(o => o && o.primaryImageSmall).map(o => {
+    const tags = (o.tags||[]).map(t => t.term).join(" "), bare = (o.title||"").replace(/\([^)]*\)/g, " ");
+    const score = mentions(bare + " " + tags + " " + (o.objectName||""), want) ? 2 : mentions(o.title||"", want) ? 1 : 0;
+    return {o, score};
+  }).filter(x => x.score).sort((a,b) => b.score - a.score).filter(({o}) => {
+    const k = o.artistDisplayName || o.objectID; perArtist[k] = (perArtist[k]||0) + 1; return perArtist[k] <= 2;
+  });
+  return {url: "https://www.metmuseum.org/art/collection/search?showOnly=withImage&q=" + encodeURIComponent(q),
+    items: scored.slice(0,6).map(({o}) => ({u:o.objectURL, t:o.title,
+    m:[o.artistDisplayName,o.objectDate].filter(Boolean).join(" · "), img:o.primaryImageSmall}))};
 }
-async function archive(q){
-  /* title matches inside the Archive's curated library collections (digitized library books, LibriVox
-     audiobooks, Prelinger films, old-time radio, NASA, Smithsonian…), most-downloaded first.
-     Searching everything returns personal uploads, favorites lists and some adult material. */
-  const words = q.replace(/["()\[\]{}:]/g, " ").trim();
+
+/* Archive: title matches inside the Archive's curated library collections (digitized library books, LibriVox
+   audiobooks, Prelinger films, old-time radio, NASA, Smithsonian…), most-downloaded first; the sharper search
+   also asks for the meaning among the item's subjects ("planet*").
+   Searching everything returns personal uploads, favorites lists and some adult material. */
+async function archive(name, words){
+  const t = name.replace(/["()\[\]{}:*]/g, " ").trim();
   const lib = "americana OR library_of_congress OR biodiversity OR fedlink OR prelinger OR librivoxaudio OR oldtimeradio OR feature_films OR nasa OR smithsonian OR gutenberg OR internetarchivebooks";
+  const subj = words.length ? ` AND subject:(${words.map(w => stem(w) + "*").join(" OR ")})` : "";
+  const q = `title:("${t}")${subj} AND collection:(${lib}) AND NOT mediatype:collection`;
   const j = await getJSON("https://archive.org/advancedsearch.php?fl[]=identifier&fl[]=title&fl[]=mediatype&fl[]=year&rows=6&sort[]=downloads+desc&output=json&q="
-    + encodeURIComponent(`title:("${words}") AND collection:(${lib}) AND NOT mediatype:collection`));
-  return (j.response?.docs||[]).map(d => ({u:`https://archive.org/details/${d.identifier}`, t:d.title,
-    m:[d.mediatype,d.year].filter(Boolean).join(" · "), img:`https://archive.org/services/img/${d.identifier}`}));
+    + encodeURIComponent(q));
+  return {url: "https://archive.org/search?query=" + encodeURIComponent(q),
+    items: (j.response?.docs||[]).map(d => ({u:`https://archive.org/details/${d.identifier}`, t:d.title,
+    m:[d.mediatype,d.year].filter(Boolean).join(" · "), img:`https://archive.org/services/img/${d.identifier}`}))};
 }
 
 /* Photographs: the Library of Congress. Its search often takes 10–30 seconds, so it starts only after
    the other shelves are done (or after a few seconds), gets one try with a 30-second limit, and is
-   cancelled when the reader moves on. Restricted items and "group of images" placeholders are skipped. */
+   cancelled when the reader moves on. Restricted items and "group of images" placeholders are skipped.
+   Its search treats extra words loosely ("Mercury planet" brings back books on lithography), so instead of a
+   second, sharper search it asks once for the plain name and puts first the photographs whose subjects or title
+   carry the meaning ("whales" for Orca), or whose subject is the thing itself ("beavers" for Beaver). */
 let locStop = null;
-async function photos(q){
+async function photos(name, words){
   locStop?.abort(); locStop = new AbortController();
   const signal = AbortSignal.any ? AbortSignal.any([locStop.signal, AbortSignal.timeout(30000)]) : AbortSignal.timeout(30000);
-  const r = await fetch("https://www.loc.gov/photos/?fo=json&at=results&c=15&fa=online-format:image&q=" + encodeURIComponent(q), {signal});
+  const q = "q=" + encodeURIComponent(name) + "&fa=online-format:image";
+  const r = await fetch("https://www.loc.gov/photos/?fo=json&at=results&c=40&" + q, {signal});
   if(!r.ok) throw new Error(r.status);
   const j = await r.json();
-  return (j.results||[]).filter(x => !x.access_restricted).map(x => {
+  const plural = name.toLowerCase() + "s";
+  const items = (j.results||[]).filter(x => !x.access_restricted).map(x => {
     /* image_url lists sizes as "...jpg#h=150&w=114": take the smallest that is at least 300px across */
     const sizes = (x.image_url||[]).filter(u => /\.jpg(#|$)/.test(u)).map(u => {
       const h = +(/[#&]h=(\d+)/.exec(u)||[])[1] || 0, w = +(/[#&]w=(\d+)/.exec(u)||[])[1] || 0;
@@ -296,20 +528,25 @@ async function photos(q){
     }).sort((a,b) => a.n - b.n);
     const img = (sizes.find(z => z.n >= 300) || sizes.at(-1))?.u;
     const year = /^\d{4}/.exec(x.date || "")?.[0];
+    const subjects = (x.subject||[]).map(z => String(z).toLowerCase());
+    const fits = (words.length && mentions([x.title, ...subjects].join(" "), words)) || subjects.includes(plural);
     return img && {u: String(x.url || x.id).replace(/^(https?:)?\/\//, "https://"), t: x.title,
-      m: [(x.contributor||[])[0], year].filter(Boolean).join(" · "), img};
-  }).filter(Boolean).slice(0,6);
+      m: [(x.contributor||[])[0], year].filter(Boolean).join(" · "), img, fits};
+  }).filter(Boolean);
+  return {url: "https://www.loc.gov/photos/?" + q,
+    items: [...items.filter(x => x.fits), ...items.filter(x => !x.fits)].slice(0,6)};
 }
 
 /* ---------- render a topic page ---------- */
 async function openTopic(title, others=[], query=""){
   const my = ++token;
   document.body.classList.add("on");
+  delete document.body.dataset.wing;
   window.scrollTo(0,0);
   $("q").value = query || title;
   $("lead").innerHTML = `<p class="status">Looking it up…</p>`;
-  ["plate","facts","tocbox","mapbox","best","relbox"].forEach(id => $(id).hidden = true);
-  ["books","met","ia","loc"].forEach(id => $(id).innerHTML = `<p class="status">Searching…</p>`);
+  ["plate","facts","timebox","tocbox","mapbox","best","relbox"].forEach(id => $(id).hidden = true);
+  ["books","met","ia","loc"].forEach(id => { $(id).innerHTML = `<p class="status">Searching…</p>`; more(id, ""); });
   locStop?.abort();
 
   let s;
@@ -322,6 +559,7 @@ async function openTopic(title, others=[], query=""){
   }
   if(my !== token) return;
   const name = s.title || title, short = (s.titles?.normalized || name).replace(/ \(.*\)$/,"");
+  if(s.type !== "disambiguation") Myriad.discover?.trail.add({wing: "", title: name, name});
   document.title = name + " — Myriad";
   const disamb = s.type === "disambiguation";
   const otherLinks = disamb ? [] : others.filter(o => o !== title && o !== name).slice(0,5);
@@ -351,12 +589,34 @@ async function openTopic(title, others=[], query=""){
 
   if(s.wikibase_item && !disamb) entity(s.wikibase_item).then(async e => {
     if(my !== token) return;
+    /* which wings this topic belongs to: take on the first one's colour and link to them */
+    /* a topic that plainly belongs to a wing with its own pages (a film, a filmmaker) opens there instead —
+       unless the reader came from that wing asking for this general page (?stay) */
+    const own = Myriad.takeover(e.claims);
+    if(own && !new URLSearchParams(location.search).has("stay")){ location.replace(Myriad.topicIn(own, name)); return; }
+    const wings = Myriad.wingsFor(e.claims);
+    if(wings.length){
+      document.body.dataset.wing = wings[0].id;
+      const at = $("lead").querySelector(".desc") || $("lead").querySelector("h1");
+      at.insertAdjacentHTML("afterend", `<p class="in-wings">${wings.map(w =>
+        `<a href="${w.ready ? Myriad.topicIn(w, name) : w.id + "/"}" style="--c:var(--c-${w.id})"><i aria-hidden="true"></i>${esc(w.name)}</a>`).join("")}</p>`);
+    }
     const {read, refs} = sources(e, name);
     $("readon").insertAdjacentHTML("beforeend", read.map(r => `<a href="${esc(r.u)}" ${ext}>${esc(r.t)}</a>`).join(""));
     if(refs.length){
       $("refs").innerHTML = refs.map(r => `<li><span class="src">${esc(r.src)}</span><a href="${esc(r.u)}" ${ext}>${esc(r.t)}</a>${r.why ? `<span class="why">${esc(r.why)}</span>` : ""}</li>`).join("");
       $("best").hidden = false;
     }
+    const base = s.content_urls?.desktop?.page || "";
+    const drawTimeline = t => $("timeline").innerHTML = t.map(r => `<li${r.mile ? ` class="mile"` : ""}><span class="when">${esc(r.text)}</span><span class="what">${
+        r.go ? `<a data-go="${esc(r.go)}">${esc(r.label)}</a>` : esc(r.label)}${
+        r.tag ? `<span class="tl-tag">${esc(r.tag)}</span>` : ""}${r.until ? `<span class="until">until ${esc(r.until)}</span>` : ""}${
+        r.note ? `<span class="note">${esc(r.note)}${r.at ? ` <a href="${esc(r.at)}" ${ext}>In the article</a>` : ""}</span>` : ""}</span></li>`).join("");
+    timeline(e).then(t => {
+      if(my !== token || !t.length) return;
+      drawTimeline(t); $("timebox").hidden = false;
+      return context(name, base, t).then(c => { if(my === token) drawTimeline(c); });
+    }).catch(()=>{});
     const rows = await facts(e.claims || {});
     if(my !== token || !rows.length) return;
     $("factlist").innerHTML = rows.map(r => `<dt>${esc(r.label)}</dt><dd>${r.vals.map(v =>
@@ -382,10 +642,11 @@ async function openTopic(title, others=[], query=""){
      hide them until the reader picks a meaning */
   document.querySelectorAll(".lib").forEach(x => x.hidden = disamb);
   if(disamb) return;
-  const shelf = (el, fn) => fn(short).then(r => { if(my===token) fill(el,r); })
+  const words = meaning(name, s.description, short);
+  const shelf = (el, fn) => fn(short, words).then(r => { if(my===token){ fill(el, r.items); more(el, r.url); } })
     .catch(e => { if(my===token) $(el).innerHTML = `<p class="status">${e.name === "TimeoutError"
       ? "This library didn't answer in time. Try again later." : "Couldn't reach this library right now."}</p>`; });
-  const rest = [["books",books],["met",met],["ia",archive]].map(([el,fn]) => shelf(el, fn));
+  const rest = [["books",books],["met",(n,w) => sharpThenPlain(met,n,w)],["ia",(n,w) => sharpThenPlain(archive,n,w)]].map(([el,fn]) => shelf(el, fn));
   /* the slow Library of Congress goes last */
   Promise.race([Promise.allSettled(rest), new Promise(ok => setTimeout(ok, 4000))]).then(() => {
     if(my !== token) return;
@@ -410,7 +671,8 @@ function go(title, others=[], query=""){
   openTopic(title, others, query);
 }
 function home(push=true){
-  token++; locStop?.abort(); document.body.classList.remove("on"); $("q").value = "";
+  showTrail();
+  token++; locStop?.abort(); document.body.classList.remove("on"); delete document.body.dataset.wing; $("q").value = "";
   document.title = "Myriad — a myriad of info";
   if(push) history.pushState(null, "", location.pathname);
 }
@@ -427,25 +689,13 @@ document.addEventListener("click", e => {
   const a = e.target.closest("[data-go]"); if(!a) return;
   e.preventDefault(); go(a.dataset.go);
 });
-/* the theme switch cycles light → dark → Y2K, and remembers the choice */
-const THEMES = ["light", "dark", "y2k"], THEME_NAME = {light:"Light", dark:"Dark", y2k:"Y2K"};
-const theme = () => {
-  const t = document.documentElement.dataset.theme;
-  return THEMES.includes(t) ? t : (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-};
-const labelTheme = () => {
-  const now = theme(), next = THEMES[(THEMES.indexOf(now) + 1) % THEMES.length];
-  $("theme").setAttribute("aria-label", `Theme: ${THEME_NAME[now]}. Switch to ${THEME_NAME[next]}`);
-  $("theme").title = `Theme: ${THEME_NAME[now]} (next: ${THEME_NAME[next]})`;
-};
-$("theme").addEventListener("click", () => {
-  const next = THEMES[(THEMES.indexOf(theme()) + 1) % THEMES.length];
-  document.documentElement.dataset.theme = next;
-  try { localStorage.setItem("myriad-theme", next); } catch(e){}
-  labelTheme();
-});
-labelTheme();
+/* the reader's trail across Myriad, on the front page */
+function showTrail(){ const h = Myriad.discover?.trail.html(18) || ""; $("trail").innerHTML = h; $("trailbox").hidden = !h; }
+showTrail();
 $("chips").innerHTML = SUGGEST.map(t => `<a data-go="${esc(t)}">${esc(t)}</a>`).join("");
+$("wingcards").innerHTML = Myriad.WINGS.map(w => `<div class="wing-card" style="--c:var(--c-${w.id})">
+  <a class="wc-name" href="${w.id}/"><i aria-hidden="true"></i>${esc(w.name)}</a><p>${esc(w.line)}</p>
+  <p class="wc-try">${w.try.map(t => `<a ${w.ready ? `href="${esc(Myriad.topicIn(w, t))}"` : `data-go="${esc(t)}"`}>${esc(t.replace(/ \(.*\)$/,""))}</a>`).join("")}</p></div>`).join("");
 $("room").innerHTML = Object.entries(BEST).map(([n, links]) => `<div><h3>${esc(n)}</h3><ul>${links.map(l =>
   `<li><a href="${esc(l.u)}" ${ext}>${esc(l.t)}</a><span>${esc(l.why)}</span></li>`).join("")}</ul></div>`).join("");
 
