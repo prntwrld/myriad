@@ -488,6 +488,7 @@ document.addEventListener("error", e => {
   if(img.id === "pic") $("plate").hidden = true;
   else if(img.closest(".frame")) img.outerHTML = `<span class="cover">${esc(img.dataset.t || "")}</span>`;
   else if(img.closest(".ph")) img.remove();
+  else if(img.closest(".dc-img")) img.outerHTML = `<span class="dc-ini">·</span>`;
 }, true);
 
 /* shared with the discovery front page (landing.js) */

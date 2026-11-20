@@ -92,12 +92,14 @@ async function fromFilm(n){
     OPTIONAL { ?x wdt:P18 ?img } OPTIONAL { ?x wdt:P106 ?m . VALUES ?m { ${MUSIC_JOBS.map(q => "wd:" + q).join(" ")} } }
     SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
   } GROUP BY ?x ?xLabel ?r ORDER BY DESC(?pop) LIMIT 30`);
-  /* the crew make the more surprising steps than the stars: weigh them up */
-  const boost = {dop: 3, mus: 3, wri: 2, edi: 2, dir: 1.5, cast: 1};
+  /* the crew make more surprising steps than the stars, so weigh them up; and step to people
+     Wikipedia knows well (with a face to show) rather than the twelfth name on the cast list */
+  const boost = {dop: 3, mus: 3, wri: 2, edi: 2, dir: 2.5, cast: 0.6};
   const cands = rows.map(r => ({r: r.r, node: {key: C.qid(r.x), kind: "person", id: C.qid(r.x), name: C.label(r, "x") || C.artTitle(r.a), title: C.artTitle(r.a),
       href: here(C.artTitle(r.a)), img: r.pic ? C.commons(r.pic, 300) : "", sub: "",
-      chips: r.music && METRONOME ? [{wing: METRONOME, href: topicIn(METRONOME, C.artTitle(r.a))}] : []}, w: Math.sqrt(+r.pop) * (boost[r.r] || 1)}))
-    .filter(c => c.node.name);
+      chips: r.music && METRONOME ? [{wing: METRONOME, href: topicIn(METRONOME, C.artTitle(r.a))}] : []},
+      w: Math.sqrt(+r.pop) * (boost[r.r] || 1) * (r.pic ? 1 : 0.35)}))
+    .filter(c => c.node.name && +rows.find(r => C.qid(r.x) === c.node.id).pop >= 8);
   const out = []; while(cands.length){ const c = D.pick(cands, x => x.w); cands.splice(cands.indexOf(c), 1); out.push({node: c.node, why: ROLE_WHY.toPerson[c.r] || "with"}); }
   return out;
 }
@@ -125,7 +127,7 @@ async function doubleFeature(j){
   const cached = D.daily.get("cinema-double");
   if(cached) return cached;
   const r = D.rng("cinema-double-" + D.today());
-  for(let tries = 0; tries < 6; tries++){
+  for(let tries = 0; tries < 8; tries++){
     const a = await wellKnown(j, r);
     const rows = await C.sparql(`SELECT ?b ?r ?x ?xLabel (MAX(?sl) AS ?pop) (SAMPLE(?art) AS ?ab) WHERE {
       VALUES (?p ?r) { (wdt:P344 "dop") (wdt:P86 "mus") (wdt:P58 "wri") (wdt:P161 "cast") }
@@ -133,13 +135,16 @@ async function doubleFeature(j){
       FILTER NOT EXISTS { wd:${a.id} wdt:P57 ?d . ?b wdt:P57 ?d }
       ?b wikibase:sitelinks ?sl . FILTER(?sl > 15) ?art schema:about ?b ; schema:isPartOf <https://en.wikipedia.org/> .
       SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-    } GROUP BY ?b ?r ?x ?xLabel ORDER BY DESC(?pop) LIMIT 40`).catch(() => []);
-    /* the crew make the best reasons; among those, a well-known partner, chosen by the day */
+    } GROUP BY ?b ?r ?x ?xLabel ORDER BY (?r = "cast") DESC(?pop) LIMIT 60`).catch(() => []);
+    /* the crew make the best reasons (a shared cinematographer says more than a shared star), so the first
+       tries insist on one; and the partner should be a discovery — known enough to find, not the obvious hit */
     const rank = {dop: 0, mus: 1, wri: 2, cast: 3};
-    const best = rows.filter(x => C.label(x, "x")).sort((x, y) => rank[x.r] - rank[y.r] || y.pop - x.pop);
+    const best = rows.filter(x => C.label(x, "x") && (tries >= 5 || x.r !== "cast")).sort((x, y) => rank[x.r] - rank[y.r]);
     if(!best.length) continue;
-    const tier = best.filter(x => x.r === best[0].r).slice(0, 4);
-    const b = tier[Math.floor(r() * tier.length)];
+    const tier = best.filter(x => x.r === best[0].r);
+    const fresh = tier.filter(x => +x.pop >= 15 && +x.pop <= 60);
+    const from = fresh.length ? fresh : tier;
+    const b = from[Math.floor(r() * Math.min(from.length, 8))];
     const film = j?.films.find(f => f.id === C.qid(b.b));
     const pair = {a, b: {id: C.qid(b.b), enwiki: C.artTitle(b.ab), name: strip(C.artTitle(b.ab)), year: film?.year || "", archive: film?.archive || ""},
       why: ({dop: "Both shot by", mus: "Both scored by", wri: "Both written by", cast: "Both starring"})[b.r], who: C.label(b, "x"), whoId: C.qid(b.x)};
