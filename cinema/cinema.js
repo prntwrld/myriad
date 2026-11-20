@@ -416,6 +416,9 @@ async function personPage(ctx){
     if(!alive(ctx) || !rows.length) return;
     const people = rows.map(r => ({id: qid(r.person), name: label(r, "person"), n: +r.n, pic: r.pic, title: artTitle(r.a),
       note: (r.roles || "").split(",").map(x => ROLE[x]).filter(Boolean).slice(0, 3).join(", "), films: r.films || ""})).filter(p => p.name);
+    /* the people they worked with most fill the space under the portrait when the words beside it run longer */
+    Myriad.sideFill?.(people.filter(p => p.pic).slice(0, 12).map(p => ({src: commons(p.pic, 300), name: p.name, title: `${p.name} — ${p.n} films together`,
+      href: p.title ? here(p.title) : `https://www.wikidata.org/wiki/${p.id}`, internal: !!p.title})));
     show("s-collab", `<div class="collab">${web({name, pic: ctx.pic}, people)}
       <ol class="ranked">${people.slice(0, 14).map(p => `<li><a href="${esc(p.title ? here(p.title) : "https://www.wikidata.org/wiki/" + p.id)}">${esc(p.name)}</a>
         <span class="role">${esc(p.note)}</span><span class="n">${p.n}</span></li>`).join("")}</ol></div>`);
@@ -480,6 +483,9 @@ async function filmPage(ctx){
     $("readon")?.closest(".readon")?.insertAdjacentHTML("beforebegin", honors(won, info));
     const people = ids => ids.map(i => info[i] && {id: i, ...info[i]}).filter(p => p?.name);
     if(cast.length) show("s-cast", `<div class="faces">${people(cast.slice(0, 24)).map(face).join("")}</div>`);
+    /* the cast's faces fill the space under the poster when the words beside it run longer */
+    Myriad.sideFill?.(people(cast.slice(0, 16)).filter(p => p.pic).map(p => ({src: commons(p.pic, 300), name: p.name, title: p.name,
+      href: p.title ? here(p.title) : `https://www.wikidata.org/wiki/${p.id}`, internal: !!p.title})));
     /* one card per person, listing every job they did (Kurosawa: Director · Writer · Editor) */
     const jobs = new Map();
     for(const [r, ids] of Object.entries(crew)) for(const i of ids) jobs.set(i, [...(jobs.get(i) || []), ROLE[r]]);

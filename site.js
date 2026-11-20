@@ -99,48 +99,39 @@ document.addEventListener("DOMContentLoaded", () => {
   labelTheme(btn);
 });
 
-/* Topic pages: the picture and the quick facts stand beside the summary. When a short summary would leave a hole
-   beneath it, the last facts continue under the summary instead, just enough rows to bring the two columns level
-   (all of them, if need be). Every page builds its topic header the same way (#lead beside .side holding #facts),
-   so this serves them all. Each check starts afresh from the facts as the page wrote them, so it can't flip to and fro,
-   and a page that rewrites its facts later is simply balanced again. */
-const GAP = 60;
+/* Topic pages: the words on the left (the summary, then the quick facts, whole), the picture on the right.
+   When the words run longer than the picture, the right-hand column fills with a few more pictures the page offers
+   (Myriad.sideFill), in whole rows, as many as fit, so no hole opens beside the words. Every page builds its topic
+   header the same way (#lead beside .side), so this serves them all; on a phone the columns stack and nothing moves. */
 let balancing = 0;
 /* how tall a column's content is (the grid stretches both columns to the taller one, so its own height won't say) */
-const contentH = el => { const kids = [...el.children].filter(k => !k.hidden && k.offsetParent); return kids.length ? kids.at(-1).getBoundingClientRect().bottom - el.getBoundingClientRect().top : 0; };
+const contentH = (el, skip) => { const kids = [...el.children].filter(k => !k.hidden && k.offsetParent && k !== skip); return kids.length ? kids.at(-1).getBoundingClientRect().bottom - el.getBoundingClientRect().top : 0; };
 const balanceHero = () => {
-  const lead = document.getElementById("lead"), facts = document.getElementById("facts"), side = facts?.closest(".hero")?.querySelector(".side");
-  if(!lead || !facts || !side) return;
-  const dl = facts.querySelector("dl");
-  /* start again from the facts as written */
-  lead.querySelector(".facts-more")?.remove();
-  dl.querySelectorAll(".moved").forEach(x => x.classList.remove("moved"));
-  facts.classList.remove("emptied");
-  if(facts.hidden || !matchMedia("(min-width: 761px)").matches) return;
-  const gap = () => contentH(side) - contentH(lead);
-  if(gap() <= GAP) return;
-  const kids = [...dl.children], pairs = [];
-  for(let i = 0; i + 1 < kids.length; i += 2) if(kids[i].tagName === "DT") pairs.push([kids[i], kids[i + 1]]);
-  const more = document.createElement("div");
-  more.className = "facts facts-more";
-  more.innerHTML = `<h2 class="label">Quick facts</h2><dl></dl>`;
-  lead.append(more);
-  const mdl = more.querySelector("dl");
-  let n = 0;
-  while(n < pairs.length && gap() > GAP){
-    const before = Math.abs(gap()), [dt, dd] = pairs[pairs.length - 1 - n];
-    const copies = [dt.cloneNode(true), dd.cloneNode(true)];
-    dt.classList.add("moved"); dd.classList.add("moved"); mdl.prepend(...copies);
-    if(n === pairs.length - 1) facts.classList.add("emptied");
-    /* a row that overshoots, leaving a bigger hole on the other side, goes back */
-    if(Math.abs(gap()) > before){ copies.forEach(c => c.remove()); dt.classList.remove("moved"); dd.classList.remove("moved"); facts.classList.remove("emptied"); break; }
-    n++;
+  const lead = document.getElementById("lead"), side = lead?.closest(".hero")?.querySelector(".side");
+  if(!lead || !side) return;
+  const facts = document.getElementById("facts"), wide = matchMedia("(min-width: 761px)").matches;
+  /* only once the facts are filled in: until then the page may still rewrite the summary, and the facts with it */
+  if(facts && !facts.hidden){
+    if(wide && facts.parentElement !== lead){ lead.append(facts); facts.classList.add("in-lead"); }
+    if(!wide && facts.parentElement === lead){ side.append(facts); facts.classList.remove("in-lead"); }
   }
-  if(!n) more.remove();
-  else more.classList.toggle("whole", facts.classList.contains("emptied"));
+  /* the extra pictures: whole rows of two, as many as fit beside the words */
+  let box = side.querySelector(".side-fill");
+  const list = side._fill || [];
+  if(!wide || !list.length){ box?.remove(); return; }
+  if(!box){ box = document.createElement("div"); box.className = "side-fill"; side.append(box); }
+  const tile = (side.clientWidth - 8) / 2, room = contentH(lead) - contentH(side, box) - 18;
+  const n = Math.min(Math.max(0, Math.floor((room + 8) / (tile + 8))) * 2, Math.floor(list.length / 2) * 2);
+  if(+box.dataset.n === n) return;
+  box.dataset.n = n; box.hidden = !n;
+  box.innerHTML = list.slice(0, n).map(x => `<a href="${esc(x.href)}"${x.internal ? "" : ` target="_blank" rel="noopener"`} title="${esc(x.title || "")}"${x.name ? ` data-name="${esc(x.name)}"` : ""}><img src="${esc(x.src)}" alt="" loading="lazy"></a>`).join("");
 };
+const reBalance = () => { cancelAnimationFrame(balancing); balancing = requestAnimationFrame(balanceHero); };
+/* pictures a page offers for the space under its main picture: [{src, href, title, name?, internal?}]
+   (name is shown over the picture, as for a person; internal links open in the same tab) */
+const sideFill = list => { const side = document.querySelector(".hero .side"); if(side){ side._fill = list; side.querySelector(".side-fill")?.remove(); reBalance(); } };
 /* the summary, the picture and the facts all arrive at different moments, so check whenever the page changes size */
-new ResizeObserver(() => { cancelAnimationFrame(balancing); balancing = requestAnimationFrame(balanceHero); }).observe(document.documentElement);
+new ResizeObserver(reBalance).observe(document.documentElement);
 
-window.Myriad = {ROOT, WINGS, ALL_WINGS, TELESCOPE, wingsFor, takeover, topicIn, esc};
+window.Myriad = {ROOT, WINGS, ALL_WINGS, TELESCOPE, wingsFor, takeover, topicIn, esc, sideFill};
 }

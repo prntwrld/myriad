@@ -236,6 +236,17 @@ function shell(){
     <div id="views"></div><div id="fshelves"></div>`;
 }
 const alive = ctx => ctx.my === token;
+/* more pictures for the space under the main photo, when the words beside it run longer (see Myriad.sideFill):
+   the best-liked recent sightings, in the Northwest where there are enough */
+async function offerFill(ctx, where, local=true){
+  const get = extra => nat("observations", {...where, ...extra, photos: "true", quality_grade: "research", order_by: "votes", per_page: 14})
+    .then(j => (j.results || []).filter(o => o.photos?.[0]?.url)).catch(() => []);
+  let obs = await get(local ? {place_id: PNW} : {});
+  if(local && obs.length < 4) obs = await get({});
+  if(!alive(ctx) || obs.length < 2) return;
+  Myriad.sideFill?.(obs.map(o => ({src: size(o.photos[0].url, "medium"), href: o.uri,
+    title: [cap(o.taxon?.preferred_common_name || o.taxon?.name || ""), o.place_guess, (o.photos[0].attribution || "").replace(/^\(c\)\s*/, "© ").replace(/,.*$/, "")].filter(Boolean).join(" · ")})));
+}
 
 /* which iNaturalist taxon an article is about: Wikidata's iNaturalist ID, else its scientific name */
 async function findTaxon(e, name){
@@ -302,12 +313,13 @@ async function openTopic(title, others=[], query=""){
     Myriad.discover?.trail.add({wing: "field-guide", title: name, name, img: size(p?.medium_url || "", "small") || thumb || ""});
     $("readon").insertAdjacentHTML("beforeend", `<a href="https://www.inaturalist.org/taxa/${t.id}" ${ext}>iNaturalist</a>`
       + `<a class="drift-here" href="./?drift=${t.id}&name=${encodeURIComponent(name)}">Drift from here</a>`);
+    offerFill(ctx, {taxon_id: t.id});
     return t.rank_level <= 10 ? speciesPage(ctx) : groupPage(ctx);
   }
   plate(wikiImg);
   Myriad.discover?.trail.add({wing: "field-guide", title: name, name, img: thumb || ""});
   const at = claimStr(e, "P625");
-  if(at?.latitude != null) return placePage({...ctx, lat: at.latitude, lng: at.longitude});
+  if(at?.latitude != null){ offerFill(ctx, {lat: at.latitude, lng: at.longitude, radius: 10}, false); return placePage({...ctx, lat: at.latitude, lng: at.longitude}); }
 }
 
 /* ---------- a species ---------- */
