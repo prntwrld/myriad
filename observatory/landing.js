@@ -1,5 +1,5 @@
-/* Myriad — the Observatory's front page: NASA's picture of the day, a wall of the sky, an object of the day, what's up tonight,
-   the next launches, Drift from a world to the spacecraft that went there and what they found, a walk outward from Earth,
+/* Myriad — the Observatory's front page: NASA's picture of the day, an object of the day, what's up tonight, the next launches,
+   a wall of the sky, Drift from a world to the spacecraft that went there and what they found, a walk outward from Earth,
    spaceflight on this day, and the visitor's collection. */
 {
 const {esc} = window.Myriad, D = window.Myriad.discover, O = window.Obs, Sky = window.Sky;
@@ -34,10 +34,10 @@ const box = document.createElement("div");
 box.id = "discover";
 box.innerHTML = `
   <section class="cine-hero ob-hero" id="d-hero" hidden></section>
-  <section class="section ob-wallsec" id="d-wall" hidden><h2 class="label">The sky</h2><p class="sub">A different spread every day — open any one</p><div class="body"></div></section>
   <section class="section" id="d-object" hidden><h2 class="label">Object of the day</h2><div class="body"></div></section>
   <section class="section" id="d-tonight" hidden><h2 class="label">Tonight</h2><p class="sub" id="d-tonight-sub"></p><div class="body"></div></section>
   <section class="section" id="d-launch" hidden><h2 class="label">Next launches</h2><p class="sub">From Launch Library 2 — times in your time zone</p><div class="body"></div></section>
+  <section class="section ob-wallsec" id="d-wall" hidden><h2 class="label">The sky</h2><p class="sub">A different spread every day — open any one</p><div class="body"></div></section>
   <section class="section" id="d-drift" hidden><h2 class="label">Drift</h2><p class="sub">From a world to the spacecraft that went there, and on to what they found</p><div class="body"></div></section>
   <section class="section" id="d-scale" hidden><h2 class="label">Outward from Earth</h2><p class="sub">One step at a time, to the edge of what we can see</p><div class="body"></div></section>
   <section class="section" id="d-day" hidden><h2 class="label">On this day</h2><p class="sub" id="d-day-sub"></p><div class="body"></div></section>
@@ -106,7 +106,8 @@ async function wall(){
   if(shown.length < 8) return;
   $("d-wall").hidden = false;
   const tile = t => `<a class="fg-tile" href="${esc(here(t))}" data-name="${esc(O.bare(t))}" title="${esc(O.bare(t))}"><img src="${esc(O.picCache[t].src)}" alt="${esc(O.bare(t))}" loading="lazy"></a>`;
-  O.capped($("d-wall").querySelector(".body"), shown, l => `<div class="fg-tiles ob-tiles">${l.map(tile).join("")}</div>`, {n: 40, tile: innerWidth <= 760 ? 0 : 128});
+  /* three rows to start; the rest on request */
+  O.capped($("d-wall").querySelector(".body"), shown, l => `<div class="fg-tiles ob-tiles">${l.map(tile).join("")}</div>`, {n: 21, tile: innerWidth <= 760 ? 0 : 128});
 }
 
 /* ---------- object of the day ---------- */
