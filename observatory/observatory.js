@@ -330,6 +330,58 @@ function scaleDraw(name, r, img){
     <text x="${ra + 10}" y="${H + 22}">${esc(name)}</text><text x="${2 * ra + 50 + rb}" y="${H + 22}">${esc(ref.n)}</text></svg></figure>`;
 }
 
+/* ---------- the space map: the solar system from above, every planet where it is on a given day ---------- */
+/* [key, article, ring (share of the map's radius: evenly spaced, since true distances would crush the inner four into a dot), size] */
+const WORLDS = [["mercury", "Mercury (planet)", 0.2, 9], ["venus", "Venus", 0.31, 12], ["earth", "Earth", 0.42, 12], ["mars", "Mars", 0.53, 10],
+  ["jupiter", "Jupiter", 0.66, 22], ["saturn", "Saturn", 0.78, 19], ["uranus", "Uranus", 0.89, 14], ["neptune", "Neptune", 1, 14]];
+/* systemMap(host, {highlight}) — host is an empty element; highlight is a planet's key ("mars") to ring in the accent colour */
+async function systemMap(host, {highlight = ""} = {}){
+  await pics(["Sun", ...WORLDS.map(w => w[1])], 330);
+  const S = 720, c = S / 2, R = c - 64, rad = a => R * a;
+  const fmt = t => new Date(t).toLocaleDateString("en-US", {year: "numeric", month: "long", day: "numeric"});
+  const disc = (id, x, y, r, title) => { const src = picCache[title]?.src;
+    return `<clipPath id="${id}"><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}"/></clipPath>${src
+      ? `<image href="${esc(src)}" x="${(x - r).toFixed(1)}" y="${(y - r).toFixed(1)}" width="${2 * r}" height="${2 * r}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${id})"/>`
+      : `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" class="ob-map-plain"/>`}`; };
+  const draw = t => {
+    const placed = WORLDS.map(([k, title, a, r]) => { const h = Sky.helio(k, t), ang = Math.atan2(h.y, h.x), cs = Math.cos(ang), sn = Math.sin(ang);
+      /* the name sits just outside the planet, on the side away from the Sun */
+      return {k, title, r, x: c + rad(a) * cs, y: c - rad(a) * sn, lx: c + (rad(a) + r + 8) * cs, ly: c - (rad(a) + r + 8) * sn + 5 - (sn > 0.5 ? 4 : sn < -0.5 ? -8 : 0),
+        anchor: cs > 0.35 ? "start" : cs < -0.35 ? "end" : "middle", name: bare(title)}; });
+    /* a name that would run off the edge goes under its planet instead */
+    const em = innerWidth <= 760 ? 11.5 : 8;
+    placed.forEach(p => { const w = p.name.length * em;
+      if((p.anchor === "start" && p.lx + w > S - 4) || (p.anchor === "end" && p.lx - w < 4)){ p.anchor = "middle"; p.lx = p.x; p.ly = p.y + p.r + (innerWidth <= 760 ? 24 : 17); } });
+    return `<svg class="ob-map-svg" viewBox="0 0 ${S} ${S}" role="img" aria-label="${esc(`The planets around the Sun on ${fmt(t)}`)}">
+      ${WORLDS.map(([, , a]) => `<circle cx="${c}" cy="${c}" r="${rad(a).toFixed(1)}" class="ob-map-orbit"/>`).join("")}
+      <a href="${esc(here("Sun"))}">${disc("mapSun", c, c, 24, "Sun")}<circle cx="${c}" cy="${c}" r="24" class="ob-map-ring sun"/></a>
+      ${placed.map(p => `<a href="${esc(here(p.title))}" class="ob-map-pl${p.k === highlight ? " on" : ""}">${disc("map-" + p.k, p.x, p.y, p.r, p.title)}
+        <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${p.r + (p.k === highlight ? 4 : 1)}" class="ob-map-ring"/>
+        <text x="${p.lx.toFixed(1)}" y="${p.ly.toFixed(1)}" text-anchor="${p.anchor}">${esc(bare(p.title))}</text></a>`).join("")}
+    </svg>`;
+  };
+  let t = Date.now(), playing = 0;
+  host.innerHTML = `<div class="ob-map"><div class="ob-map-draw"></div>
+    <div class="ob-map-ctl"><button type="button" class="ob-map-play" aria-label="Play">▶</button>
+      <input type="range" min="-1095" max="1095" value="0" step="1" aria-label="Move through time, three years either way">
+      <button type="button" class="ghost ob-map-now">Today</button></div>
+    <p class="ob-map-when"></p></div>`;
+  const box = host.querySelector(".ob-map-draw"), range = host.querySelector("input"), when = host.querySelector(".ob-map-when"), play = host.querySelector(".ob-map-play");
+  const show = () => { t = Date.now() + +range.value * 864e5; box.innerHTML = draw(t);
+    const d = +range.value; when.textContent = d === 0 ? `Today, ${fmt(t)}` : `${fmt(t)} — ${Math.abs(d) >= 60 ? `${num(Math.abs(d) / 30.44)} months` : `${Math.abs(d)} days`} ${d > 0 ? "from now" : "ago"}`; };
+  const stop = () => { cancelAnimationFrame(playing); playing = 0; play.textContent = "▶"; play.setAttribute("aria-label", "Play"); };
+  range.oninput = () => { stop(); show(); };
+  host.querySelector(".ob-map-now").onclick = () => { stop(); range.value = 0; show(); };
+  play.onclick = () => {
+    if(playing) return stop();
+    play.textContent = "❚❚"; play.setAttribute("aria-label", "Pause");
+    if(+range.value >= +range.max) range.value = range.min;
+    const step = () => { range.value = Math.min(+range.max, +range.value + 3); show(); if(+range.value >= +range.max || !host.isConnected) return stop(); playing = requestAnimationFrame(step); };
+    playing = requestAnimationFrame(step);
+  };
+  show();
+}
+
 /* ---------- small pieces of page ---------- */
 const section = (id, label, sub = "") => `<section class="section" id="${id}" hidden><h2 class="label">${esc(label)}</h2>${sub ? `<p class="sub">${sub}</p>` : ""}<div class="body"></div></section>`;
 const show = (id, html) => { const s = $(id); if(!s || !html) return; s.querySelector(".body").innerHTML = html; s.hidden = false; };
@@ -432,6 +484,14 @@ async function openTopic(title, others = [], query = ""){
     `<a class="drift-here" href="./?drift=${s.wikibase_item}&k=${kind}&name=${encodeURIComponent(name)}">Drift from here</a>`);
   /* the NASA pictures: some beside the words, the rest on the wall further down */
   ctx.nasa = kind === "person" ? Promise.resolve([]) : nasaImages(ctx.short).catch(() => []);
+  if(kind === "other") wikiSearch(ctx.short).then(hits => {
+    const alt = hits.find(h => h !== name && !/disambiguation/i.test(h));
+    if(!alt || !alive(ctx)) return;
+    return getJSON(W + "action=query&prop=description&redirects=1&titles=" + encodeURIComponent(alt)).then(j => {
+      const d = Object.values(j.query?.pages || {})[0]?.description || "";
+      if(alive(ctx) && SPACEY.test(d)) $("lead").querySelector("h1").insertAdjacentHTML("beforebegin", `<p class="ob-alt">Looking for the sky? <a href="${esc(here(alt))}">${esc(bare(alt))}</a></p>`);
+    });
+  }).catch(() => {});
   if(kind === "person") return personPage(ctx);
   if(kind === "mission") return missionPage(ctx);
   return objectPage(ctx, kind === "object");
@@ -487,10 +547,18 @@ async function tonight(ctx){
     const extra = thing === "moon" ? (() => { const m = Sky.moon(Date.now()); return ` ${Sky.phaseName(m.phase)}, ${Math.round(m.fraction * 100)}% lit.`; })() : "";
     show("s-tonight", `<div class="ob-tn">${altChart(curve, res.dark, p)}<p class="ob-tn-line">${line}${esc(extra)}</p></div>`);
     $("s-tonight").querySelector(".sub").textContent = "From where you are — your location stays in this browser";
-  }, () => { if($("s-tonight")) $("s-tonight").hidden = true; }, {maximumAge: 600000, timeout: 15000});
+  }, err => {
+    /* a phone can refuse (location turned off for the browser) or take too long: say so, and offer to try again */
+    if(!alive(ctx) || !$("s-tonight")) return;
+    const why = err?.code === 1 ? "Your browser didn't share your location. On an iPhone, check Settings → Privacy & Security → Location Services → Safari Websites, then try again."
+      : "Couldn't find where you are just now.";
+    show("s-tonight", `<p class="ob-tn-line">${esc(why)}</p><p class="ob-ask"><button type="button" class="ghost" id="ob-locate">Try again</button></p>`);
+    $("ob-locate").onclick = ask;
+  }, {maximumAge: 600000, timeout: 30000, enableHighAccuracy: false});
+  const ask = () => { $("ob-locate").disabled = true; $("ob-locate").textContent = "Finding you…"; run(); };
   if(state === "granted") return run();
-  show("s-tonight", `<p class="fg-ask"><button type="button" class="ghost" id="ob-locate">Is it up tonight where I am?</button></p>`);
-  $("ob-locate").onclick = () => { $("ob-locate").disabled = true; $("ob-locate").textContent = "Finding you…"; run(); };
+  show("s-tonight", `<p class="ob-ask"><button type="button" class="ghost" id="ob-locate">Is it up tonight where I am?</button></p>`);
+  $("ob-locate").onclick = ask;
 }
 /* the night as a picture: the sky's darkness behind, the object's path across it, the horizon */
 function altChart(pts, dark, p){
@@ -510,6 +578,7 @@ async function objectPage(ctx, astro){
   const {e, id, name, short} = ctx;
   $("views").innerHTML = section("s-tonight", "Tonight", "Whether it's in your sky tonight")
     + section("s-nums", "By the numbers")
+    + section("s-map", "Where it is now", "Every planet where it is today, seen from above — rings evenly spaced, not to scale")
     + section("s-missions", "Missions", "Every spacecraft sent there, in order")
     + section("s-ba", "Before & after")
     + section("s-also", "Also")
@@ -517,6 +586,8 @@ async function objectPage(ctx, astro){
     + section("s-nasa", "Pictures", "From the NASA Image and Video Library");
   nasaWall(ctx);
   if(astro) tonight(ctx);
+  const mapKey = id === "Q2" ? "earth" : PLANET_IDS[id] !== "moon" ? PLANET_IDS[id] : "";
+  if(mapKey){ $("s-map").hidden = false; systemMap($("s-map").querySelector(".body"), {highlight: mapKey}); }
   const parent = claimIds(e, "P397")[0], con = claimIds(e, "P59")[0], cls = claimIds(e, "P31").slice(0, 3);
   const disc = claimIds(e, "P61"), mag0 = amount(e, "P1215");
   /* a modern "discovery" date for something anyone can see by eye, with no discoverer named, is a slip in the data
@@ -765,7 +836,7 @@ document.addEventListener("error", ev => {
 }, true);
 
 /* shared with the front page (landing.js) */
-window.Obs = {sparql, getJSON, qid, label, artTitle, commons, filePath, here, bare, cap, num, words, pics, picCache, summary, entity, describe, claimIds, claimTime, claimStr,
+window.Obs = {systemMap, sparql, getJSON, qid, label, artTitle, commons, filePath, here, bare, cap, num, words, pics, picCache, summary, entity, describe, claimIds, claimTime, claimStr,
   numbers, numbersHtml, visitors, visitRows, destinations, discoveries, nasaImages, HOW, howOf, lightTime, dist, LY, AU, go, card, strip, capped, timeline, PLANET_IDS};
 
 const p = new URLSearchParams(location.search);

@@ -39,6 +39,7 @@ box.innerHTML = `
   <section class="section" id="d-launch" hidden><h2 class="label">Next launches</h2><p class="sub">From Launch Library 2 — times in your time zone</p><div class="body"></div></section>
   <section class="section ob-wallsec" id="d-wall" hidden><h2 class="label">The sky</h2><p class="sub">A different spread every day — open any one</p><div class="body"></div></section>
   <section class="section" id="d-drift" hidden><h2 class="label">Drift</h2><p class="sub">From a world to the spacecraft that went there, and on to what they found</p><div class="body"></div></section>
+  <section class="section" id="d-map"><h2 class="label">The Solar System today</h2><p class="sub">Every planet where it is right now, seen from above — slide or play to watch them move</p><div class="body"></div></section>
   <section class="section" id="d-scale" hidden><h2 class="label">Outward from Earth</h2><p class="sub">One step at a time, to the edge of what we can see</p><div class="body"></div></section>
   <section class="section" id="d-day" hidden><h2 class="label">On this day</h2><p class="sub" id="d-day-sub"></p><div class="body"></div></section>
   <section class="section" id="d-trail" hidden><h2 class="label">Your collection</h2><p class="sub"><span id="d-count"></span> — kept only in this browser <button type="button" class="linkish small" id="d-clear">Clear</button></p><div class="body"></div></section>`;
@@ -369,6 +370,7 @@ const shown = () => new Promise(ok => {
   const todays = objectOfDay();
   tonight();
   launches();
+  O.systemMap($("d-map").querySelector(".body"));
   scaleWalk();
   onThisDay();
   /* Drift starts from what the reader asked for (?drift=Q…&k=object|mission&name=Title), or from today's object */

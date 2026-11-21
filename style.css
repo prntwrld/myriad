@@ -1330,6 +1330,30 @@ button.fg-play:hover,.fg-track.on button.fg-play{background:var(--accent);color:
   & .ob-num{border-top-color:#1477e6}
 }
 /* "Observatory." is the longest wing name without a space to break at: on a phone it steps down to fit beside the theme switch */
-@media (max-width:480px){ body[data-wing="observatory"]:not(.on) .masthead .logo{font-size:30px;letter-spacing:.06em} }
+@media (max-width:480px){ body[data-wing="observatory"] .masthead .logo{font-size:30px;letter-spacing:.06em} }
 .ob-n span{display:inline-block}
 @media (max-width:760px){ .ob-tn-chart text{font-size:24px} }
+
+/* the space map: the solar system from above, on deep night whatever the theme */
+.ob-map{max-width:720px;margin:0 auto}
+.ob-map-draw{background:radial-gradient(circle at 50% 50%,#1b2140 0,#0b0e18 62%,#06070c 100%);border:1px solid var(--line);aspect-ratio:1}
+.ob-map-svg{display:block;width:100%;height:100%}
+.ob-map-orbit{fill:none;stroke:rgba(200,205,240,.22);stroke-width:1}
+.ob-map-ring{fill:none;stroke:rgba(255,255,255,.25)}
+.ob-map-ring.sun{stroke:rgba(255,200,120,.5)}
+.ob-map-plain{fill:#8a8fa8}
+.ob-map-pl text{font:15px "EB Garamond",serif;fill:rgba(236,232,222,.85);paint-order:stroke;stroke:#0b0e18;stroke-width:3px}
+.ob-map-pl:hover text{fill:#fff}
+.ob-map-pl:hover .ob-map-ring{stroke:#fff}
+.ob-map-pl.on .ob-map-ring{stroke:#aba6f0;stroke-width:2.5}
+.ob-map-pl.on text{fill:#fff;font-weight:600}
+.ob-map-ctl{display:flex;align-items:center;gap:12px;margin-top:14px}
+.ob-map-ctl input{flex:1;accent-color:var(--accent)}
+.ob-map-ctl button{min-height:40px;border-radius:999px}
+button.ob-map-play{width:40px;padding:0;letter-spacing:0;font-size:14px}
+.ob-map-when{margin:8px 0 0;text-align:center;color:var(--muted);font-style:italic;font-size:16px}
+@media (max-width:760px){ .ob-map-pl text{font-size:22px} }
+/* a page that isn't a thing in the sky points to the one that is */
+.ob-alt{margin:0 0 10px;font-size:17px;color:var(--muted);font-style:italic}
+.ob-alt a{font-style:normal;font-weight:600}
+.ob-alt a::after{content:" →"}

@@ -147,9 +147,17 @@ function arc(th, lat, lng, from, to, steps = 60){
   });
 }
 
+/* where a planet is around the Sun: heliocentric ecliptic x, y (AU), for drawing the solar system from above */
+function helio(name, t){
+  const d = dn(t);
+  if(name === "earth"){ const s = sunAt(d); return {x: -s.x, y: -s.y, r: s.r}; }
+  const h = orbit(EL[name](d));
+  return {x: h.x, y: h.y, r: h.r};
+}
+
 /* rough distance from Earth, in km, for the Sun, Moon and planets right now */
 const AU = 149597870.7;
 const distanceKm = (name, t = Date.now()) => name === "moon" ? moon(t).km : name === "sun" ? sun(t).km : planet(name, t).dist * AU;
 
-window.Sky = {planet, moon, sun, altAz, compass, tonight, arc, where, phaseName, distanceKm, elongation, AU, PLANETS: Object.keys(EL)};
+window.Sky = {helio, planet, moon, sun, altAz, compass, tonight, arc, where, phaseName, distanceKm, elongation, AU, PLANETS: Object.keys(EL)};
 }
