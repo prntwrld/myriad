@@ -153,6 +153,12 @@ function moonDrawing(m){
   return `<svg class="ob-moon" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="${R}" class="dark"/><path d="${outer} ${inner}Z" class="lit"/></svg>`;
 }
 const hhmm = t => new Date(t).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"});
+/* a rough place from the clock alone: longitude from the time zone's offset, and a mid latitude in whichever hemisphere it sits */
+const SOUTH = /^(Australia|Antarctica)\/|Pacific\/(Auckland|Chatham|Fiji|Tongatapu|Noumea)|America\/(Sao_Paulo|Argentina|Buenos_Aires|Santiago|Montevideo|Asuncion|La_Paz|Lima)|Africa\/(Johannesburg|Maputo|Harare|Windhoek|Lusaka|Gaborone)|Indian\/(Mauritius|Reunion)/;
+const guessPlace = () => {
+  let tz = ""; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch(e){}
+  return {lat: SOUTH.test(tz) ? -33 : 40, lng: -new Date().getTimezoneOffset() / 4};
+};
 async function tonight(){
   const now = Date.now(), m = Sky.moon(now);
   const toFull = ((0.5 - m.phase + 1) % 1) * 29.53, toNew = ((1 - m.phase) % 1) * 29.53;
@@ -181,10 +187,13 @@ async function tonight(){
     }
     const moonCard = `<a class="ob-pl ob-pl-moon" href="${esc(here("Moon"))}"><span class="ob-pl-img">${moonDrawing(m)}</span><span class="ob-pl-name">${esc(Sky.phaseName(m.phase))}</span>
       <span class="ob-pl-when">${Math.round(m.fraction * 100)}% lit · ${m.phase < 0.5 ? `full in ${Math.max(1, Math.round(toFull))} days` : `new in ${Math.max(1, Math.round(toNew))} days`}</span>${m.line ? `<span class="ob-pl-mag">${esc(m.line)}</span>` : ""}</a>`;
-    sec.querySelector(".body").innerHTML = `<div class="ob-pls">${moonCard}${cards.join("")}</div>
+    sec.querySelector(".body").innerHTML = `<div id="d-dome"></div><div class="ob-pls">${moonCard}${cards.join("")}</div>
       ${away.length ? `<p class="chart-note">Not in tonight's sky: ${away.map(p => O.bare(TITLE[p.n])).join(", ")}</p>` : ""}
       ${loc ? "" : `<p class="ob-ask"><button type="button" class="ghost" id="d-locate">Use my location</button></p>`}`;
     $("d-locate") && ($("d-locate").onclick = () => locate(true));
+    /* the sky overhead: for the visitor's place if they shared it, else roughly where their clock says they are */
+    const at = loc || guessPlace();
+    window.SkyMap?.dome($("d-dome"), {lat: at.lat, lng: at.lng, approx: !loc});
   };
   const locate = ask => {
     if(!navigator.geolocation) return;

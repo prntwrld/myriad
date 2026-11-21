@@ -10,10 +10,10 @@ const W = "https://en.wikipedia.org/w/api.php?format=json&origin=*&";
 const WD = "https://www.wikidata.org/w/api.php?format=json&origin=*&";
 let token = 0;
 
-/* fetch JSON with a time limit, and up to two polite retries if a service says "too many requests" */
-const getJSON = async (url, ms = 20000, tries = 3, opts = {}) => {
+/* fetch JSON with a time limit, and polite retries if a service says "too many requests", each waiting longer */
+const getJSON = async (url, ms = 20000, tries = 3, opts = {}, attempt = 1) => {
   const r = await fetch(url, {signal: AbortSignal.timeout(ms), ...opts});
-  if(r.status === 429 && tries > 1){ await new Promise(ok => setTimeout(ok, 1200 * (4 - tries) + Math.random() * 600)); return getJSON(url, ms, tries - 1, opts); }
+  if(r.status === 429 && attempt < tries){ await new Promise(ok => setTimeout(ok, 1500 * attempt + Math.random() * 800)); return getJSON(url, ms, tries, opts, attempt + 1); }
   if(!r.ok) throw new Error(r.status);
   return r.json();
 };
@@ -42,7 +42,8 @@ async function wikiSearch(q, n = 8){
   return [...spacey, ...hits.filter(h => !spacey.includes(h))].map(h => h.title);
 }
 const summary = t => getJSON("https://en.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(t.replace(/ /g, "_")));
-const entity = async id => (await getJSON(WD + "action=wbgetentities&props=claims|sitelinks&sitefilter=enwiki&ids=" + id)).entities?.[id] || {};
+/* the page hangs on this one, so it gets more patience than the rest */
+const entity = async id => (await getJSON(WD + "action=wbgetentities&props=claims|sitelinks&sitefilter=enwiki&ids=" + id, 20000, 6)).entities?.[id] || {};
 
 /* each article's lead picture and one-line description, 50 titles a request, remembered between pages */
 const picCache = {};
@@ -461,8 +462,15 @@ async function openTopic(title, others = [], query = ""){
   try { s = await summary(title); } catch(e){ if(my === token) $("lead").innerHTML = `<p class="status">Couldn't load that. Try again in a moment, or try another search.</p>`; return; }
   if(my !== token) return;
   const name = s.title || title;
-  document.title = bare(name) + " — Observatory — Myriad";
   const disamb = s.type === "disambiguation";
+  /* not about space (Sombrero the hat, a name with many meanings): Myriad's general page takes it, with a way back here */
+  let e = null;
+  if(s.wikibase_item && !disamb){ try { e = await entity(s.wikibase_item); } catch(err){} if(my !== token) return; }
+  const spacey = e && (isMission(e) || isObject(e) || Myriad.wingsFor(e.claims).some(w => w.id === "observatory"));
+  if(!spacey && (e || disamb || !s.wikibase_item)){
+    location.replace(`${Myriad.ROOT}?t=${encodeURIComponent(name)}&stay&from=observatory`); return;
+  }
+  document.title = bare(name) + " — Observatory — Myriad";
   const otherLinks = others.filter(o => o !== title && o !== name).slice(0, 5);
   $("lead").innerHTML = `<h1>${esc(bare(name))}</h1>
     ${s.description ? `<p class="desc">${esc(cap(s.description))}</p>` : ""}
@@ -473,10 +481,7 @@ async function openTopic(title, others = [], query = ""){
   const img = thumb && orig?.width > 960 && /\/\d+px-/.test(thumb) ? thumb.replace(/\/\d+px-/, "/960px-") : orig?.source || thumb;
   if(img){ $("pic").src = img; $("plate").hidden = false; }
   if(!disamb) Myriad.shelves?.render($("oshelves"), {title: name, description: s.description, short: bare(name)});
-  if(!s.wikibase_item || disamb) return;
-  let e;
-  try { e = await entity(s.wikibase_item); } catch(err){ return; }
-  if(my !== token) return;
+  if(!e) return;
   const ctx = {my, id: s.wikibase_item, name, short: bare(name), e, img: thumb || "", desc: s.description || ""};
   const kind = isHuman(e) ? "person" : isMission(e) ? "mission" : isObject(e) ? "object" : "other";
   Myriad.discover?.trail.add({wing: "observatory", title: name, name: ctx.short, img: thumb || ""});
@@ -484,14 +489,6 @@ async function openTopic(title, others = [], query = ""){
     `<a class="drift-here" href="./?drift=${s.wikibase_item}&k=${kind}&name=${encodeURIComponent(name)}">Drift from here</a>`);
   /* the NASA pictures: some beside the words, the rest on the wall further down */
   ctx.nasa = kind === "person" ? Promise.resolve([]) : nasaImages(ctx.short).catch(() => []);
-  if(kind === "other") wikiSearch(ctx.short).then(hits => {
-    const alt = hits.find(h => h !== name && !/disambiguation/i.test(h));
-    if(!alt || !alive(ctx)) return;
-    return getJSON(W + "action=query&prop=description&redirects=1&titles=" + encodeURIComponent(alt)).then(j => {
-      const d = Object.values(j.query?.pages || {})[0]?.description || "";
-      if(alive(ctx) && SPACEY.test(d)) $("lead").querySelector("h1").insertAdjacentHTML("beforebegin", `<p class="ob-alt">Looking for the sky? <a href="${esc(here(alt))}">${esc(bare(alt))}</a></p>`);
-    });
-  }).catch(() => {});
   if(kind === "person") return personPage(ctx);
   if(kind === "mission") return missionPage(ctx);
   return objectPage(ctx, kind === "object");
@@ -577,6 +574,8 @@ function altChart(pts, dark, p){
 async function objectPage(ctx, astro){
   const {e, id, name, short} = ctx;
   $("views").innerHTML = section("s-tonight", "Tonight", "Whether it's in your sky tonight")
+    + section("s-find", "Where to find it")
+    + section("s-galaxy", "In the Milky Way")
     + section("s-nums", "By the numbers")
     + section("s-map", "Where it is now", "Every planet where it is today, seen from above — rings evenly spaced, not to scale")
     + section("s-missions", "Missions", "Every spacecraft sent there, in order")
@@ -586,6 +585,11 @@ async function objectPage(ctx, astro){
     + section("s-nasa", "Pictures", "From the NASA Image and Video Library");
   nasaWall(ctx);
   if(astro) tonight(ctx);
+  /* among the stars (a planet or the Moon where it is today), and, for things in our galaxy, where in it */
+  const sky = skyThing(ctx), pos = typeof sky === "string" ? Sky.where(sky, Date.now()) : sky;
+  if(pos && window.SkyMap && id !== "Q525") SkyMap.chart($("s-find").querySelector(".body"), {ra: pos.ra, dec: pos.dec, name: short, skip: typeof sky === "string" ? sky : ""}).then(ok => { if(ok && alive(ctx)) $("s-find").hidden = false; });
+  const lyAway = (quantity(e, "P2583", "km") || 0) / LY;
+  if(sky && typeof sky !== "string" && window.SkyMap && SkyMap.galaxy($("s-galaxy").querySelector(".body"), {ra: sky.ra, dec: sky.dec, ly: lyAway, name: short})) $("s-galaxy").hidden = false;
   const mapKey = id === "Q2" ? "earth" : PLANET_IDS[id] !== "moon" ? PLANET_IDS[id] : "";
   if(mapKey){ $("s-map").hidden = false; systemMap($("s-map").querySelector(".body"), {highlight: mapKey}); }
   const parent = claimIds(e, "P397")[0], con = claimIds(e, "P59")[0], cls = claimIds(e, "P31").slice(0, 3);

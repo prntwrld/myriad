@@ -17,7 +17,11 @@ The Field Guide's front page (`field-guide/landing.js`) opens on a species of th
 
 **Observatory** has its own topic pages too (`observatory/observatory.js`). A planet, moon, star, galaxy or nebula gets its picture beside the title, its numbers from Wikidata put in terms you can feel ("1,300 Earths would fit inside", "the light you see left it around 1480"), every spacecraft that went there as a timeline of mission patches, who discovered it and when, the neighbours that share its parent body or constellation, a wall of pictures from the NASA Image and Video Library, and — only if you allow your location — whether it's up tonight and which way to look. A mission gets where it went, what it found, its crew, what came before it and what it led to, and the rest of its programme. Where things are in the sky is worked out in the browser (`observatory/sky.js`), so your location never leaves it.
 
-The Observatory's front page (`observatory/landing.js`) opens on NASA's Astronomy Picture of the Day, then a wall of the sky, an object of the day, the Moon and planets tonight, the next launches (Launch Library 2), Drift from a world to the spacecraft that went there and what they found, a walk outward from Earth to the edge of what we can see, spaceflight on this day, and your collection. On this day uses `observatory/days.json`, made ahead of time by `tools/build_observatory_data.py` (run it from the repository root now and then; it takes a few minutes).
+The Observatory's front page (`observatory/landing.js`) opens on NASA's Astronomy Picture of the Day, then a wall of the sky, an object of the day, the Moon and planets tonight, the next launches (Launch Library 2), Drift from a world to the spacecraft that went there and what they found, a walk outward from Earth to the edge of what we can see, spaceflight on this day, and your collection. The maps (`observatory/skymap.js`): tonight's sky overhead on the front page (for your exact place if you share it, otherwise roughly where your clock says you are, with a slider through the night), the solar system from above with every planet where it is today, and on each star, galaxy or nebula's page a chart of where to find it among the stars and, for things inside our galaxy, where it sits in the Milky Way. The stars, constellations, Milky Way and Messier objects are in `observatory/sky-data.json`, built once by `tools/build_sky_data.py` from [d3-celestial](https://github.com/ofrohn/d3-celestial).
+
+A search in the Observatory that turns out not to be about space (Sombrero the hat) goes to Myriad's general page, with a link back.
+
+On this day uses `observatory/days.json`, made ahead of time by `tools/build_observatory_data.py` (run it from the repository root now and then; it takes a few minutes).
 
 ## Discovery
 Myriad should let you find things you didn't know to look for. `discover.js` holds the pieces every wing shares: picks of the day that are the same for everyone and change at midnight, **Drift** (a walk from one thing to a connected thing, one step at a time, saying why), and **your trail** (what you've wandered through across Myriad, kept only in your browser).
@@ -36,6 +40,7 @@ On this day and the door use `cinema/data.json`, thousands of well-known films a
 - [Wikimedia Commons](https://commons.wikimedia.org) images, and Xeno-canto's recordings
 - [iNaturalist](https://www.inaturalist.org), [GBIF](https://www.gbif.org) and [Xeno-canto](https://xeno-canto.org)
 - [NASA](https://images.nasa.gov) (the Image and Video Library and the Astronomy Picture of the Day) and [Launch Library 2](https://thespacedevs.com/llapi)
+- Star maps from [d3-celestial](https://github.com/ofrohn/d3-celestial) by Olaf Frohn (BSD-3-Clause), after the Hipparcos catalogue; the Milky Way from above by NASA/JPL-Caltech/R. Hurt
 
 Text from Wikipedia is available under CC BY-SA.
 
