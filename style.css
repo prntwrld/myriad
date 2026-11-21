@@ -1159,3 +1159,173 @@ button.fg-play:hover,.fg-track.on button.fg-play{background:var(--accent);color:
 .side-fill a[data-person]:hover img{filter:none}
 .side-fill a[data-name]::after{content:attr(data-name);position:absolute;left:0;right:0;bottom:0;padding:18px 8px 6px;color:#fff;font-size:14px;line-height:1.2;
   background:linear-gradient(transparent,rgba(0,0,0,.72))}
+
+/* ======================================================================
+   Observatory: worlds, stars and missions, and the front page.
+   ====================================================================== */
+#otopic{display:none} body.on #otopic{display:block}
+/* the picture first on a phone, as in the Field Guide */
+@media (max-width:760px){
+  #otopic .hero .side{display:contents}
+  #otopic .hero .plate{order:-1}
+  #otopic .hero .plate .pic{max-height:300px}
+}
+.plate.ob-patch-plate .pic{object-fit:contain;background:var(--paper);max-height:320px}
+
+/* cards: planets and nebulae square, mission patches whole on paper */
+.ob-card .frame{aspect-ratio:1}
+.ob-card.patch .frame{background:var(--paper);border:1px solid var(--line);box-shadow:none}
+.ob-card.patch .frame img{object-fit:contain;padding:10px}
+.wall.strip.ob-strip .poster{flex:0 0 140px}
+.ob-wall{grid-template-columns:repeat(auto-fill,minmax(124px,1fr))}
+.ob-more{padding-left:0}
+.ob-tiles{grid-template-columns:repeat(auto-fill,minmax(128px,1fr))}
+@media (max-width:760px){ .ob-tiles{grid-template-columns:repeat(4,minmax(0,1fr))} .wall.strip.ob-strip .poster{flex-basis:118px} }
+@media (max-width:420px){ .ob-tiles{grid-template-columns:repeat(3,minmax(0,1fr))} }
+
+/* by the numbers: each a big figure, and something to feel it by */
+.ob-nums{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:22px 28px}
+.ob-num{border-top:2px solid var(--accent);padding-top:10px}
+.ob-what{margin:0;font:600 11px/1.2 var(--display);letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.ob-n{margin:6px 0 0;font:500 34px/1.05 "EB Garamond",serif;font-variant-numeric:lining-nums;overflow-wrap:anywhere}
+.ob-n span{font-size:16px;color:var(--muted);font-style:italic}
+.ob-feel{margin:6px 0 0;font-size:17px;line-height:1.4}
+#s-nums .body:has(.ob-scale){display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:36px;align-items:start}
+.ob-scale{margin:0}
+.ob-scale svg{width:100%;height:auto;display:block;max-height:240px}
+.ob-scale text{text-anchor:middle;font:italic 15px "EB Garamond",serif;fill:var(--muted)}
+.ob-disc.this{fill:var(--accent)} .ob-disc.earth{fill:#3d6fb6} .ob-disc.sun{fill:#e8a33a}
+.ob-ring{fill:none;stroke:var(--line)}
+@media (max-width:760px){
+  #s-nums .body:has(.ob-scale){grid-template-columns:minmax(0,1fr);gap:20px}
+  .ob-scale svg{max-height:170px}
+  .ob-nums{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 16px}
+  .ob-n{font-size:27px} .ob-n span{font-size:14.5px} .ob-feel{font-size:15.5px}
+}
+
+/* the missions, in order along a rule, each with its patch */
+.ob-tl{list-style:none;margin:0;padding:0 0 8px;display:flex;overflow-x:auto;scrollbar-width:thin;position:relative}
+.ob-tl-item{flex:0 0 132px;display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;padding:0 6px}
+.ob-tl-item::before{content:"";position:absolute;top:31px;left:0;right:0;border-top:1px solid var(--line)}
+.ob-tl-item:first-child::before{left:50%} .ob-tl-item:last-child::before{right:50%}
+.ob-tl-year{font:600 13px/1 var(--display);letter-spacing:.08em;color:var(--accent);font-variant-numeric:lining-nums;height:20px}
+.ob-tl-dot{position:relative;width:9px;height:9px;transform:rotate(45deg);background:var(--accent);margin:2px 0 12px}
+.ob-tl-item.future .ob-tl-dot{background:var(--bg);border:1px solid var(--accent)}
+.ob-tl-pic{width:96px;height:96px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:var(--soft);border:1px solid var(--line);
+  text-decoration:none;color:var(--muted);font:600 22px/1 var(--display);transition:transform .2s ease}
+.ob-tl-pic:hover{transform:translateY(-3px)}
+.ob-tl-pic img{width:100%;height:100%;object-fit:cover;display:block}
+.ob-tl-pic.patch{background:var(--paper)}
+.ob-tl-pic.patch img{object-fit:contain;padding:6px}
+.ob-tl-name{margin-top:8px;font-size:15.5px;font-weight:500;line-height:1.25;color:var(--ink);text-decoration:none;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ob-tl-name:hover{color:var(--accent)}
+.ob-tl-how{font-size:13.5px;color:var(--muted);font-style:italic}
+@media (max-width:760px){ .ob-tl-item{flex-basis:112px} .ob-tl-pic{width:80px;height:80px} }
+
+/* before & after: a line of words where there's no picture to stand in */
+.ob-ba-text{width:150px}
+.ob-ba-text p{margin:0;padding:14px;border:1px solid var(--line);background:var(--paper);font:italic 18px/1.3 "EB Garamond",serif;text-align:center}
+.before-after .ob-card{width:150px}
+.ba-this .ob-card{width:150px}
+.ba-col:empty{display:none}
+@media (max-width:760px){ .ob-ba-text{width:auto;flex:1 1 100%} }
+
+/* tonight: its path across the night */
+.ob-tn{max-width:760px}
+.ob-tn-chart{width:100%;height:auto;display:block;margin-bottom:10px}
+.ob-tn-chart .night{fill:color-mix(in srgb,var(--accent) 12%,transparent)}
+.ob-tn-chart .hz{stroke:var(--ink);stroke-width:1}
+.ob-tn-chart .hz10{stroke:var(--line);stroke-dasharray:4 4}
+.ob-tn-chart .track{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linejoin:round}
+.ob-tn-chart .best{fill:var(--accent);stroke:var(--bg);stroke-width:2}
+.ob-tn-chart text{font:13px "EB Garamond",serif;fill:var(--muted);text-anchor:middle}
+.ob-tn-chart .lbl{text-anchor:start;font-style:italic}
+.ob-tn-line{margin:0;font-size:19px;line-height:1.5}
+.ob-ask{margin:16px 0 0}
+
+/* ---------- the front page ---------- */
+/* the picture of the day: Now showing, with a photograph */
+.ob-hero .ch-poster.ob-photo{aspect-ratio:4/3;height:84%;max-height:400px}
+.ob-hero .ch-text{max-width:460px}
+.ob-hero-by{margin:6px 0 0;font-size:16px;color:rgba(243,239,230,.7);font-style:italic}
+.ob-hero-text{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-style:normal;font-size:17px;line-height:1.45}
+@media (max-width:1000px) and (min-width:761px){ .ob-hero .ch-poster.ob-photo{height:240px} .ob-hero-text{-webkit-line-clamp:2} }
+@media (max-width:760px){
+  .ob-hero .ch-frame{grid-template-columns:minmax(0,1fr);align-items:start;gap:16px}
+  .ob-hero .ch-poster.ob-photo{width:100%;height:auto;max-height:none;min-height:0;aspect-ratio:16/10}
+  .ob-hero .ch-title{font-size:30px}
+}
+
+/* object of the day */
+.ob-od{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:36px;align-items:start}
+.ob-od-pic{display:block;aspect-ratio:1;overflow:hidden;background:#000;border:1px solid var(--line)}
+.ob-od-pic img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .6s ease}
+.ob-od-pic:hover img{transform:scale(1.03)}
+.ob-od-name{margin:0;font:500 clamp(32px,4vw,46px)/1.05 "EB Garamond",serif}
+.ob-od-name a{color:var(--ink);text-decoration:none}
+.ob-od-desc{margin:6px 0 20px;font:600 12px/1.4 var(--display);letter-spacing:.2em;text-transform:uppercase;color:var(--accent)}
+.ob-od .ob-nums{grid-template-columns:repeat(2,minmax(0,1fr))}
+.ob-od-extract{margin:20px 0 0;font-size:18px;line-height:1.55}
+.ob-od-open{margin:12px 0 0;font-size:17px}
+.ob-od-open a::after{content:" →"}
+@media (max-width:760px){ .ob-od{grid-template-columns:minmax(0,1fr);gap:18px} .ob-od-pic{aspect-ratio:16/10} }
+
+/* tonight's sky: the Moon as it looks, and the planets that are up */
+.ob-pls{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:22px 18px}
+.ob-pl{display:flex;flex-direction:column;align-items:center;text-align:center;color:var(--ink);text-decoration:none}
+.ob-pl:hover{color:var(--ink)}
+.ob-pl-img{width:120px;height:120px;border-radius:50%;overflow:hidden;background:#05070b;display:grid;place-items:center;margin-bottom:10px;
+  box-shadow:0 10px 22px -12px var(--shadow);transition:transform .2s ease}
+.ob-pl:hover .ob-pl-img{transform:translateY(-3px)}
+.ob-pl-img img{width:100%;height:100%;object-fit:cover;display:block}
+.ob-moon{width:100%;height:100%}
+.ob-moon .dark{fill:#1d2430} .ob-moon .lit{fill:#efe9dc}
+.ob-pl-name{font-size:19px;font-weight:500;line-height:1.2}
+.ob-pl-when{font-size:15px;color:var(--accent);line-height:1.3;margin-top:3px}
+.ob-pl-mag{font-size:14px;color:var(--muted);font-style:italic;line-height:1.3;margin-top:2px}
+@media (max-width:760px){ .ob-pls{grid-template-columns:repeat(2,minmax(0,1fr))} .ob-pl-img{width:104px;height:104px} }
+
+/* the next launches */
+.ob-launches{display:flex;gap:18px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin}
+.ob-launch{flex:0 0 232px;display:flex;flex-direction:column;color:var(--ink);text-decoration:none;font-size:14.5px;line-height:1.35}
+.ob-launch:hover{color:var(--ink)}
+.ob-ln-img{position:relative;display:block;aspect-ratio:4/3;overflow:hidden;background:var(--soft);margin-bottom:8px;border:1px solid var(--line)}
+.ob-ln-img img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s ease}
+.ob-launch:hover .ob-ln-img img{transform:scale(1.04)}
+.ob-ln-until{position:absolute;left:8px;bottom:8px;padding:5px 9px;background:rgba(10,12,16,.78);color:#f3efe6;font:600 10.5px/1 var(--display);letter-spacing:.14em;text-transform:uppercase}
+.ob-ln-name{font-size:17.5px;font-weight:500;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ob-ln-meta{color:var(--muted)}
+@media (max-width:760px){ .ob-launch{flex-basis:200px} }
+
+/* outward from Earth */
+.ob-walk{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:36px;align-items:center}
+.ob-walk-pic{display:block;aspect-ratio:4/3;overflow:hidden;background:#000;border:1px solid var(--line)}
+.ob-walk-pic img{width:100%;height:100%;object-fit:cover;display:block;animation:drift-in .45s ease}
+.ob-walk-step{margin:0;font:600 11px/1.2 var(--display);letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.ob-walk-name{margin:6px 0 0;font:500 clamp(30px,3.8vw,42px)/1.05 "EB Garamond",serif}
+.ob-walk-name a{color:var(--ink);text-decoration:none}
+.ob-walk-far{margin:10px 0 0;font:500 26px/1.15 "EB Garamond",serif;color:var(--accent);font-variant-numeric:lining-nums}
+.ob-walk-light{margin:4px 0 0;font-size:17px;color:var(--muted);font-style:italic}
+.ob-walk-model{margin:16px 0 0;font-size:18px;line-height:1.5}
+.ob-walk-ctl{margin:20px 0 0;display:flex;flex-wrap:wrap;gap:10px}
+.ob-walk-ctl button{border-radius:999px}
+.ob-walk-ctl button[disabled]{opacity:.4;cursor:default}
+.ob-ruler{position:relative;height:46px;margin:26px 8px 0;border-top:1px solid var(--rule)}
+.ob-tick{position:absolute;top:-6px;left:var(--x);width:11px;height:11px;min-height:0;padding:0;border:0;border-radius:50%;transform:translateX(-50%);
+  background:var(--line);cursor:pointer}
+.ob-tick:hover{background:var(--accent-2)}
+.ob-tick.on{background:var(--accent);width:15px;height:15px;top:-8px;box-shadow:0 0 0 3px var(--bg)}
+.ob-ruler-l,.ob-ruler-r{position:absolute;top:14px;font-size:13.5px;color:var(--muted);font-style:italic}
+.ob-ruler-l{left:-8px} .ob-ruler-r{right:-8px}
+@media (max-width:760px){
+  .ob-walk{grid-template-columns:minmax(0,1fr);gap:16px}
+  .ob-walk-pic{aspect-ratio:16/10}
+  .ob-walk-far{font-size:23px} .ob-walk-model{font-size:17px}
+}
+
+/* Y2K versions */
+:root[data-theme="y2k"]{
+  & .ob-tl-pic,& .ob-ln-img,& .ob-od-pic,& .ob-walk-pic{border-radius:12px}
+  & .ob-num{border-top-color:#1477e6}
+}

@@ -15,6 +15,10 @@ Rooms that go deeper on one kind of thing, each with its own accent colour: **Fi
 
 The Field Guide's front page (`field-guide/landing.js`) opens on a species of the day, then a wall of what's been seen in Washington, Oregon and British Columbia this week, what's blooming, migrating, singing and fruiting this month, Drift through look-alikes and relatives, a shelf of the season's songs that plays straight through, and your collection.
 
+**Observatory** has its own topic pages too (`observatory/observatory.js`). A planet, moon, star, galaxy or nebula gets its picture beside the title, its numbers from Wikidata put in terms you can feel ("1,300 Earths would fit inside", "the light you see left it around 1480"), every spacecraft that went there as a timeline of mission patches, who discovered it and when, the neighbours that share its parent body or constellation, a wall of pictures from the NASA Image and Video Library, and — only if you allow your location — whether it's up tonight and which way to look. A mission gets where it went, what it found, its crew, what came before it and what it led to, and the rest of its programme. Where things are in the sky is worked out in the browser (`observatory/sky.js`), so your location never leaves it.
+
+The Observatory's front page (`observatory/landing.js`) opens on NASA's Astronomy Picture of the Day, then a wall of the sky, an object of the day, the Moon and planets tonight, the next launches (Launch Library 2), Drift from a world to the spacecraft that went there and what they found, a walk outward from Earth to the edge of what we can see, spaceflight on this day, and your collection. On this day uses `observatory/days.json`, made ahead of time by `tools/build_observatory_data.py` (run it from the repository root now and then; it takes a few minutes).
+
 ## Discovery
 Myriad should let you find things you didn't know to look for. `discover.js` holds the pieces every wing shares: picks of the day that are the same for everyone and change at midnight, **Drift** (a walk from one thing to a connected thing, one step at a time, saying why), and **your trail** (what you've wandered through across Myriad, kept only in your browser).
 
@@ -31,6 +35,7 @@ On this day and the door use `cinema/data.json`, thousands of well-known films a
 - [Library of Congress](https://www.loc.gov/photos/) prints & photographs
 - [Wikimedia Commons](https://commons.wikimedia.org) images, and Xeno-canto's recordings
 - [iNaturalist](https://www.inaturalist.org), [GBIF](https://www.gbif.org) and [Xeno-canto](https://xeno-canto.org)
+- [NASA](https://images.nasa.gov) (the Image and Video Library and the Astronomy Picture of the Day) and [Launch Library 2](https://thespacedevs.com/llapi)
 
 Text from Wikipedia is available under CC BY-SA.
 
