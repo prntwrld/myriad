@@ -1329,3 +1329,7 @@ button.fg-play:hover,.fg-track.on button.fg-play{background:var(--accent);color:
   & .ob-tl-pic,& .ob-ln-img,& .ob-od-pic,& .ob-walk-pic{border-radius:12px}
   & .ob-num{border-top-color:#1477e6}
 }
+/* "Observatory." is the longest wing name without a space to break at: on a phone it steps down to fit beside the theme switch */
+@media (max-width:480px){ body[data-wing="observatory"]:not(.on) .masthead .logo{font-size:30px;letter-spacing:.06em} }
+.ob-n span{display:inline-block}
+@media (max-width:760px){ .ob-tn-chart text{font-size:24px} }

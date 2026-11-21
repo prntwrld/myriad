@@ -24,8 +24,8 @@ const OBJECTS = ["Jupiter","Saturn","Mars","Venus","Mercury (planet)","Uranus","
   "Enceladus","Triton (moon)","Betelgeuse","Sirius","Antares","Rigel","Vega","Polaris","Proxima Centauri","Andromeda Galaxy","Whirlpool Galaxy","Sombrero Galaxy",
   "Large Magellanic Cloud","Triangulum Galaxy","Orion Nebula","Crab Nebula","Eagle Nebula","Ring Nebula","Pleiades","Sun","Ceres (dwarf planet)","Eta Carinae",
   "UY Scuti","Alpha Centauri","Callisto (moon)","Arcturus","Aldebaran"];
-/* worlds spacecraft have reached: where Drift starts */
-const VISITED = ["Jupiter","Saturn","Mars","Venus","Mercury (planet)","Uranus","Neptune","Pluto","Moon","Europa (moon)","Titan (moon)","Io (moon)","Ganymede (moon)","Ceres (dwarf planet)","4 Vesta","Halley's Comet","Sun"];
+/* worlds many spacecraft have reached, with moons of their own: where Drift starts, so the first step has threads to pull */
+const VISITED = ["Jupiter","Saturn","Mars","Venus","Mercury (planet)","Uranus","Neptune","Pluto","Moon"];
 /* pictures for the top when NASA's picture of the day can't be had */
 const HERO = ["Pillars of Creation","Earthrise","Carina Nebula","Hubble Ultra-Deep Field","The Blue Marble","Saturn","Jupiter","Crab Nebula","Andromeda Galaxy",
   "Horsehead Nebula","Webb's First Deep Field","Orion Nebula","Whirlpool Galaxy","Eagle Nebula"];
@@ -181,14 +181,14 @@ async function tonight(){
       <span class="ob-pl-when">${Math.round(m.fraction * 100)}% lit · ${m.phase < 0.5 ? `full in ${Math.max(1, Math.round(toFull))} days` : `new in ${Math.max(1, Math.round(toNew))} days`}</span>${m.line ? `<span class="ob-pl-mag">${esc(m.line)}</span>` : ""}</a>`;
     sec.querySelector(".body").innerHTML = `<div class="ob-pls">${moonCard}${cards.join("")}</div>
       ${away.length ? `<p class="chart-note">Not in tonight's sky: ${away.map(p => O.bare(TITLE[p.n])).join(", ")}</p>` : ""}
-      ${loc ? "" : `<p class="ob-ask"><button type="button" class="ghost" id="d-locate">Times and directions for where I am</button></p>`}`;
+      ${loc ? "" : `<p class="ob-ask"><button type="button" class="ghost" id="d-locate">Use my location</button></p>`}`;
     $("d-locate") && ($("d-locate").onclick = () => locate(true));
   };
   const locate = ask => {
     if(!navigator.geolocation) return;
     if(ask){ $("d-locate").disabled = true; $("d-locate").textContent = "Finding you…"; }
     navigator.geolocation.getCurrentPosition(pos => draw({lat: pos.coords.latitude, lng: pos.coords.longitude}),
-      () => { if($("d-locate")){ $("d-locate").disabled = false; $("d-locate").textContent = "Times and directions for where I am"; } }, {maximumAge: 600000, timeout: 15000});
+      () => { if($("d-locate")){ $("d-locate").disabled = false; $("d-locate").textContent = "Use my location"; } }, {maximumAge: 600000, timeout: 15000});
   };
   draw(null);
   sec.hidden = false;

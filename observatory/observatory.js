@@ -212,7 +212,7 @@ const round2 = n => n >= 100 ? num(n) : num(n, n >= 10 ? 1 : 2);
 /* how long light takes, in the plainest unit */
 const lightTime = km => {
   const s = km / C;
-  return s < 120 ? `${round2(s)} seconds` : s < 7200 ? `${num(s / 60, s < 600 ? 1 : 0)} minutes` : s < 172800 ? `${num(s / 3600, s < 36000 ? 1 : 0)} hours`
+  return s < 1 ? `${round2(s * 1000)} thousandths of a second` : s < 120 ? `${round2(s)} seconds` : s < 7200 ? `${num(s / 60, s < 600 ? 1 : 0)} minutes` : s < 172800 ? `${num(s / 3600, s < 36000 ? 1 : 0)} hours`
     : s < 3.156e7 * 2 ? `${num(s / 86400)} days` : `${words(s / 3.156e7)} years`;
 };
 const dist = km => km < 1e9 ? `${words(km)} km` : km < 0.05 * LY ? `${num(km / AU, km / AU < 10 ? 1 : 0)} AU` : `${words(km / LY)} light-years`;
@@ -249,11 +249,14 @@ function numbers(e, {kind = "object", live = null, parentName = "", name = ""} =
   let far = live ?? quantity(e, "P2583", "km");
   const mag = amount(e, "P1215");
   if(kind === "mission"){
-    const launched = claimTime(e, "P619"), ended = claimTime(e, "P582") || claimTime(e, "P730") || claimTime(e, "P2669");
-    if(launched && launched.date < Date.now()){
-      const yrs = ((ended?.date || Date.now()) - launched.date) / 3.156e10;
-      out.push({n: yrs >= 2 ? num(yrs) : num(yrs * 12), unit: yrs >= 2 ? "years" : "months", what: ended ? "Mission length" : "In space",
-        feel: ended ? `From ${launched.y} to ${ended.y}` : `Launched ${showTime(launched)}${yrs > 18 ? ` — older than anyone under ${Math.floor(yrs)}` : ""}`});
+    /* how long it flew: to its end, its landing or splashdown, or (still going) to today */
+    const launched = claimTime(e, "P619"), ended = claimTime(e, "P582") || claimTime(e, "P730") || claimTime(e, "P2669") || claimTime(e, "P620");
+    if(launched && launched.date < Date.now() && (!ended || ended.date >= launched.date)){
+      const days = ((ended?.date || Date.now()) - launched.date) / 864e5, yrs = days / 365.25;
+      const [n, unit] = yrs >= 2 ? [num(yrs), "years"] : days >= 60 ? [num(days / 30.44), "months"] : [num(Math.max(1, Math.round(days))), days < 1.5 ? "day" : "days"];
+      out.push({n, unit, what: ended ? "Mission length" : "In space",
+        feel: ended ? (launched.y === ended.y ? `${showTime(launched)} to ${showTime(ended).replace(/, \d+$/, "")}` : `From ${launched.y} to ${ended.y}`)
+          : `Launched ${showTime(launched)}${yrs > 31 ? " — longer than most people alive have been" : ""}`});
     }
     if(m){ const w = WEIGHTS.reduce((a, x) => Math.abs(Math.log(x[0] / m)) < Math.abs(Math.log(a[0] / m)) ? x : a);
       const k = m / w[0]; out.push({n: words(m), unit: "kg", what: "Mass", feel: k < 1.5 && k > 0.67 ? `About as heavy as ${w[1]}` : `About as heavy as ${words(k)} × ${w[1].replace(/^an? /, "")}`}); }
@@ -280,7 +283,7 @@ function numbers(e, {kind = "object", live = null, parentName = "", name = ""} =
   }
   if(g && g < 400){
     const kg = 70 * g / EARTH.g;
-    out.push({n: round2(g), unit: "m/s² at the surface", what: "Gravity", feel: kg > 70 ? `Someone who weighs 70 kg here would feel like ${num(kg)} kg` : `Someone who weighs 70 kg here would feel like ${num(kg, kg < 10 ? 1 : 0)} kg — ${g < 3 ? "you could jump over a car" : "an easy jump onto a table"}`});
+    out.push({n: round2(g), unit: "m/s² at the surface", what: "Gravity", feel: `Someone who weighs 70 kg here would feel like ${num(kg, kg < 10 ? 1 : 0)} kg${g < 3 ? " — light enough to jump over a car" : g < 6 ? " — light enough to leap onto a table" : ""}`});
   }
   if(far && kind !== "sun"){
     const ly = far / LY;
@@ -338,11 +341,15 @@ const card = (x, note = "") => {
   return `<a class="poster ob-card${x.patch ? " patch" : ""}" href="${esc(href)}"${x.title ? "" : ` ${ext}`}><div class="frame"><img src="${esc(src)}" alt="" loading="lazy" data-t="${esc(x.name)}"></div>
     <div class="cap"><span class="t">${esc(x.name)}</span>${note || x.note ? `<span class="y">${esc(note || x.note)}</span>` : ""}</div></a>`;
 };
-const strip = (list, note) => { const html = list.map(x => card(x, typeof note === "function" ? note(x) : note)).join(""); return html ? `<div class="wall strip ob-strip">${html}</div>` : ""; };
+const strip = (list, note) => {
+  const seen = new Set(), src = x => x.src || x.patch || x.pic || picCache[x.title]?.src || "";
+  list = list.filter(x => !src(x) || (!seen.has(src(x)) && seen.add(src(x))));
+  const html = list.map(x => card(x, typeof note === "function" ? note(x) : note)).join(""); return html ? `<div class="wall strip ob-strip">${html}</div>` : ""; };
 /* the "show all" switch under a long list: the best-known ~40, the rest on request */
 function capped(host, items, render, {n = 40, what = "", tile = 0} = {}){
   let all = false;
-  if(tile){ const cols = Math.max(1, Math.floor((host.clientWidth + 6) / (tile + 6))); n = cols * Math.max(1, Math.round(n / cols)); }
+  const cols = tile ? Math.max(1, Math.floor((host.clientWidth + 6) / (tile + 6))) : innerWidth <= 420 ? 3 : 4;
+  if(tile || host.querySelector(".fg-tiles") || /fg-tiles/.test(render([]))) n = cols * Math.max(1, Math.round(n / cols));
   const draw = () => {
     const list = all ? items : items.slice(0, n);
     host.innerHTML = render(list, all) + (items.length > n ? `<p class="wall-more ob-more"><button type="button" class="linkish" data-all>${all
@@ -354,6 +361,9 @@ function capped(host, items, render, {n = 40, what = "", tile = 0} = {}){
 
 /* the missions' timeline: patches in order along a rule, year above each */
 function timeline(list, verb){
+  /* a patch shared by several (a programme's own emblem) says nothing about each one: use its picture instead */
+  const uses = {}; list.forEach(m => { if(m.patch) uses[m.patch] = (uses[m.patch] || 0) + 1; });
+  list = list.map(m => m.patch && uses[m.patch] > 1 && m.pic ? {...m, patch: ""} : m);
   const items = list.map(m => {
     const src = m.patch ? commons(m.patch, 240) : m.pic ? commons(m.pic, 240) : "";
     return `<li class="ob-tl-item${m.future ? " future" : ""}"><span class="ob-tl-year">${m.year || ""}</span><i class="ob-tl-dot" aria-hidden="true"></i>
@@ -486,7 +496,7 @@ async function tonight(ctx){
 function altChart(pts, dark, p){
   const W = 720, H = 200, t0 = pts[0].t, t1 = pts.at(-1).t, x = t => (t - t0) / (t1 - t0) * W, y = a => H / 2 - a / 90 * (H / 2 - 12);
   const path = pts.map((q, k) => `${k ? "L" : "M"}${x(q.t).toFixed(1)},${y(q.alt).toFixed(1)}`).join("");
-  const hours = []; for(let t = Math.ceil(t0 / 36e5) * 36e5; t <= t1; t += 36e5 * 2) hours.push(t);
+  const every = innerWidth <= 760 ? 4 : 2, hours = []; for(let t = Math.ceil(t0 / (36e5 * every)) * 36e5 * every; t <= t1; t += 36e5 * every) hours.push(t);
   return `<svg class="ob-tn-chart" viewBox="0 0 ${W} ${H + 22}" role="img" aria-label="Its height above the horizon through tonight">
     <rect x="${x(dark.from)}" y="0" width="${x(dark.to) - x(dark.from)}" height="${H}" class="night"/>
     <line x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}" class="hz"/><line x1="0" x2="${W}" y1="${y(10)}" y2="${y(10)}" class="hz10"/>
@@ -508,7 +518,10 @@ async function objectPage(ctx, astro){
   nasaWall(ctx);
   if(astro) tonight(ctx);
   const parent = claimIds(e, "P397")[0], con = claimIds(e, "P59")[0], cls = claimIds(e, "P31").slice(0, 3);
-  const disc = claimIds(e, "P61"), discWhen = claimTime(e, "P575");
+  const disc = claimIds(e, "P61"), mag0 = amount(e, "P1215");
+  /* a modern "discovery" date for something anyone can see by eye, with no discoverer named, is a slip in the data
+     (Wikidata once had the Andromeda Galaxy found in 1964 rather than 964) */
+  const discWhen = !disc.length && mag0 !== null && mag0 < 6 ? null : claimTime(e, "P575");
   const info = await describe([parent, con, ...cls, ...disc.slice(0, 3), ...claimIds(e, "P138").slice(0, 2), ...live(e, "P166").map(c => c.mainsnak.datavalue.value.id).slice(0, 20)].filter(Boolean)).catch(() => ({}));
   if(!alive(ctx)) return;
   const what = cls.map(c => info[c]?.name || "").join(" ").toLowerCase();
@@ -548,7 +561,7 @@ async function objectPage(ctx, astro){
   visits.then(async list => {
     if(!alive(ctx)) return;
     const before = disc.map(d => info[d]).filter(x => x?.name).slice(0, 3).map(x => ({...x, how: discWhen ? `Found it, ${discWhen.y}` : "Found it"}));
-    const went = list.filter(m => !m.future);
+    const went = list.filter(m => !m.future && m.year && m.year <= new Date().getFullYear());
     const after = [went[0], went.at(-1)].filter((m, k, a) => m && a.indexOf(m) === k).map((m, k) => ({...m, how: k ? `Latest there, ${m.year}` : `First there, ${m.year}`}));
     const ancient = !before.length && !discWhen && ["planet", "moon", "sun"].includes(sub) && ["Q308", "Q313", "Q111", "Q319", "Q193", "Q405", "Q525"].includes(id);
     if(!before.length && !after.length && !discWhen) return;
@@ -585,7 +598,7 @@ function beforeAfter(ctx, before, after, beforeLabel, afterLabel){
   const col = (lbl, list) => list.length ? `<div class="ba-col"><h3 class="minor">${esc(lbl)}</h3><div class="ba-list">${list.map(one).join("")}</div></div>` : `<div class="ba-col"></div>`;
   const me = picCache[ctx.name]?.src || ctx.img;
   return `<div class="before-after">${col(beforeLabel, before)}
-    <div class="ba-this"><span class="ba-arrow" aria-hidden="true">→</span>${me ? `<a class="poster ob-card" href="${esc(here(ctx.name))}"><div class="frame"><img src="${esc(me)}" alt=""></div><div class="cap"><span class="t">${esc(ctx.short)}</span></div></a>` : ""}<span class="ba-arrow" aria-hidden="true">→</span></div>
+    <div class="ba-this">${before.length ? `<span class="ba-arrow" aria-hidden="true">→</span>` : ""}${me ? `<a class="poster ob-card" href="${esc(here(ctx.name))}"><div class="frame"><img src="${esc(me)}" alt=""></div><div class="cap"><span class="t">${esc(ctx.short)}</span></div></a>` : ""}${after.length ? `<span class="ba-arrow" aria-hidden="true">→</span>` : ""}</div>
     ${col(afterLabel, after)}</div>`;
 }
 
@@ -647,8 +660,13 @@ async function missionPage(ctx){
     const prog_ = rows.map(r => ({id: qid(r.m), name: label(r, "m") || artTitle(r.a), title: artTitle(r.a), patch: r.patch, pic: r.pic, year: +String(r.launch).slice(0, 4)}));
     const at = prog_.findIndex(x => x.id === id);
     let before = prev.map(i => info[i]).filter(x => x?.name), after = next.map(i => info[i]).filter(x => x?.name);
-    if(!before.length && at > 0) before = [prog_[at - 1]];
-    if(!after.length && at >= 0 && at < prog_.length - 1) after = [prog_[at + 1]];
+    const year = id => prog_.find(x => x.id === id)?.year;
+    if(launched && before.some(b => after.some(a => a.id === b.id))){
+      before = before.filter(b => !(year(b.id) > launched.y) && !after.some(a => a.id === b.id && year(b.id) >= launched.y));
+      after = after.filter(a => !before.some(b => b.id === a.id));
+    }
+    if(!before.length && at > 0 && !after.some(x => x.id === prog_[at - 1].id)) before = [prog_[at - 1]];
+    if(!after.length && at >= 0 && at < prog_.length - 1 && !before.some(x => x.id === prog_[at + 1].id)) after = [prog_[at + 1]];
     if(!before.length && !after.length) return;
     await pics([name, ...before, ...after].map(x => x.title || x).filter(Boolean));
     if(!alive(ctx)) return;
