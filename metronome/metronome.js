@@ -173,7 +173,8 @@ const isHuman = e => claimIds(e, "P31").includes("Q5");
 function kindOf(e){
   const t = claimIds(e, "P31");
   if(t.some(q => RECORD.includes(q)) || claimStr(e, "P436")) return "record";
-  if(isHuman(e)) return claimIds(e, "P106").some(q => MUSIC_JOBS.includes(q)) ? "artist" : "";
+  /* a person is an artist here when music is among the first few things they're known for (a writer who once played guitar isn't) */
+  if(isHuman(e)) return claimIds(e, "P106").slice(0, 3).some(q => MUSIC_JOBS.includes(q)) ? "artist" : "";
   if(t.some(q => GROUP.includes(q)) || claimStr(e, "P434")) return "artist";
   if(t.includes("Q18127") || claimStr(e, "P966")) return "label";
   if(t.includes("Q188451") || claimStr(e, "P8052") || Myriad.wingsFor(e.claims).some(w => w.id === "metronome")) return "genre";
@@ -299,7 +300,8 @@ document.addEventListener("scroll", () => tip.hidden = true, {passive: true});
 
 /* bandmates and collaborators as a web: the artist in the middle, the others around, each line as thick as what they share */
 function web(center, people){
-  const ps = people.slice(0, 14); if(ps.length < 3) return "";
+  /* fewer than five makes a lopsided drawing: the list beside it says it better alone */
+  const ps = people.slice(0, 14); if(ps.length < 5) return "";
   const Wd = 900, H = 640, cx = Wd / 2, cy = H / 2, max = Math.max(...ps.map(p => p.n));
   const nodes = ps.map((p, i) => {
     const a = -Math.PI / 2 + i * 2 * Math.PI / ps.length;
@@ -901,7 +903,7 @@ async function collaborators(ctx, mbid, meP, discoP){
     nodes.set(i, {id: i, name: info[i].name, title: info[i].title, n: counts[i].recs.size, note: [...counts[i].roles].join(", "), films: [...counts[i].recs].join("|")});
   }
   let ps = [...nodes.values()].sort((a, b) => b.n - a.n).slice(0, 14);
-  if(!ps.length) return;
+  if(ps.length < 2) return;
   await pics(ps.map(p => p.title));
   if(!alive(ctx)) return;
   ps = ps.map(p => ({...p, ct: p.films ? `${p.films.split("|").length} ${p.films.split("|").length === 1 ? "record" : "records"}` : p.note}));
