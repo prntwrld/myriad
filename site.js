@@ -17,7 +17,7 @@ const ALL_WINGS = [
     try:["Fallingwater","Hokusai","Art Nouveau"]},
   {id:"metronome", name:"Metronome", line:"Music to discover: records, artists, scenes, and what to play next.",
     try:["Kind of Blue","Joni Mitchell","Krautrock"]},
-  {id:"observatory", name:"Observatory", line:"Space: planets, stars, missions, and what's in tonight's sky.",
+  {id:"observatory", name:"Observatory", ready:true, line:"Space: planets, stars, missions, and what's in tonight's sky.",
     try:["Saturn","Andromeda Galaxy","Voyager 1"]}
 ];
 /* a parked wing keeps its page (and its folder) but leaves the nav, the front page and topic links until it's ready */
@@ -37,8 +37,8 @@ const RULES = {
   "metronome": c => any(vals(c,"P31"), ["Q215380","Q5741069","Q482994","Q7366","Q134556","Q188451"]) ||
     any(vals(c,"P106"), ["Q639669","Q177220","Q36834","Q488205","Q2252262","Q753110","Q855091","Q486748","Q130857","Q183945"]) ||
     (!vals(c,"P31").includes("Q5") && (has(c,"P434") || has(c,"P436"))),
-  "observatory": c => has(c,"P59") || has(c,"P397") || has(c,"P2583") || has(c,"P1096") ||
-    any(vals(c,"P31"), ["Q634","Q523","Q318","Q42372","Q26529","Q2537","Q44559","Q8928","Q3559","Q3863","Q40218"]) ||
+  "observatory": c => has(c,"P59") || has(c,"P397") || has(c,"P2583") || has(c,"P1096") || has(c,"P619") || has(c,"P6257") ||
+    any(vals(c,"P31"), ["Q634","Q523","Q318","Q42372","Q26529","Q2537","Q44559","Q8928","Q3559","Q3863","Q40218","Q148578","Q752783","Q2133344","Q18819669"]) ||
     any(vals(c,"P106"), ["Q11631","Q11063"]),
   "academy": c => any(vals(c,"P31"), ["Q13442814","Q11862829","Q2267705"]) ||
     any(vals(c,"P106"), ["Q901","Q169470","Q170790","Q4964182","Q1650915","Q82594","Q593644","Q864503","Q1622272","Q2374149"]),
@@ -60,7 +60,11 @@ const OWN = {
   "cinema": c => has(c,"P4947") || any(vals(c,"P31"), ["Q11424","Q24869","Q202866","Q93204","Q24862","Q226730","Q506240","Q3001152","Q201658"]) ||
     ["Q2526255","Q3455803","Q28389","Q222344","Q7042855","Q10800557","Q33999"].includes(vals(c,"P106")[0]),
   /* living things: anything with a scientific name, or that Wikidata calls a taxon; a person named after a plant stays put */
-  "field-guide": c => !vals(c,"P31").includes("Q5") && (has(c,"P225") || has(c,"P3151") || any(vals(c,"P31"), ["Q16521","Q55983715"]))
+  "field-guide": c => !vals(c,"P31").includes("Q5") && (has(c,"P225") || has(c,"P3151") || any(vals(c,"P31"), ["Q16521","Q55983715"])),
+  /* things in the sky and the craft sent to them: anything with a launch date, a place among the stars, a body it orbits
+     or a distance from Earth; a person (an astronomer, an astronaut) stays on the main page unless space is all they're known for */
+  "observatory": c => !vals(c,"P31").includes("Q5") && (has(c,"P619") || has(c,"P59") || has(c,"P397") || has(c,"P2583") || has(c,"P6257") || has(c,"P1096") ||
+    any(vals(c,"P31"), ["Q634","Q523","Q318","Q42372","Q26529","Q2537","Q44559","Q8928","Q3559","Q3863","Q40218","Q148578","Q752783","Q2133344","Q18819669"]))
 };
 const takeover = claims => {
   const ws = wingsFor(claims).filter(w => w.ready);

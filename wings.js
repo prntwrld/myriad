@@ -124,7 +124,6 @@ const PAGES = {
     tag: "An observatory for everyone — planets, stars, missions, and what's up in tonight's sky.",
     placeholder: "A planet, a star, a mission — Jupiter, Betelgeuse, Cassini…",
     chips: ["Jupiter","Betelgeuse","Cassini–Huygens","Orion Nebula","Europa (moon)","Apollo 11"],
-    apod: true,
     feature: {label:"A tour of the sky", sub:"From the planets out to other galaxies", photos:true,
       items:["Jupiter","Saturn","Pillars of Creation","Orion Nebula","Crab Nebula","Andromeda Galaxy","Voyager 1","James Webb Space Telescope"]},
     plan: [
@@ -229,7 +228,6 @@ const F = P.feature, items = F.items.map(x => typeof x === "string" ? {t:x} : x)
 const card = x => `<a class="item" href="${topic(x.t)}"><div class="obj"><span class="cover">${esc(x.short || x.t)}</span></div>
   <div class="placard"><div class="t">${esc((x.short || x.t).replace(/ \((\d{4} )?(film|video game|album|moon)\)$/,"").replace(/ \(Joni Mitchell album\)/,""))}</div>${x.m ? `<div class="m">${esc(x.m)}</div>` : ""}</div></a>`;
 $("main").innerHTML = `
-  ${P.apod ? `<section class="section apod" id="apod" hidden><h2 class="label">Today's picture</h2><p class="sub">NASA's Astronomy Picture of the Day</p><div id="apodbox"></div></section>` : ""}
   ${W.ready ? "" : `<section class="section shelf feature"><h2 class="label">${esc(F.label)}</h2><p class="sub">${esc(F.sub)}</p>
     <div class="row" id="feature">${items.map(card).join("")}</div>
   </section>`}
@@ -264,14 +262,4 @@ if(F.photos){
       });
     }).catch(() => {});
 }
-
-/* Observatory: today's Astronomy Picture of the Day (NASA's shared demo key allows a few dozen visits an hour) */
-if(P.apod) fetch("https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY", {signal: AbortSignal.timeout(12000)})
-  .then(r => r.ok ? r.json() : null).then(a => {
-    if(!a || a.media_type !== "image") return;
-    $("apodbox").innerHTML = `<figure class="apod-fig"><a href="https://apod.nasa.gov/apod/astropix.html" ${ext}><img src="${esc(a.url)}" alt="${esc(a.title)}"></a>
-      <figcaption><b>${esc(a.title)}</b><span class="when">${esc(a.date)}${a.copyright ? ` · ${esc(a.copyright.trim())}` : ""}</span>
-      <span class="expl">${esc(a.explanation)}</span></figcaption></figure>`;
-    $("apod").hidden = false;
-  }).catch(() => {});
 }

@@ -10,10 +10,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<link rel="stylesheet" href="style.css?v=20261120v">
+<link rel="stylesheet" href="style.css?v=20261121d">
 </head>
 <body>
-<script src="site.js?v=20261120v"></script>
+<script src="site.js?v=20261121d"></script>
 <header class="wrap masthead">
   <a class="logo" id="logo" href="./">Myriad<span class="dot">.</span></a>
   <form id="f" role="search">
@@ -64,8 +64,8 @@
 
 <footer class="wrap">Myriad draws on free public collections: Wikipedia, Wikidata, OpenStreetMap, Open Library, Project Gutenberg, The Met, the Internet Archive, and the Library of Congress. Text from Wikipedia is available under CC BY-SA.</footer>
 
-<script src="shelves.js?v=20261120v"></script>
-<script src="discover.js?v=20261120v"></script>
+<script src="shelves.js?v=20261121d"></script>
+<script src="discover.js?v=20261121d"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 {
@@ -434,6 +434,10 @@ async function openTopic(title, others=[], query=""){
     <p class="extract">${esc(disamb ? "This name can mean several things. Pick one below." : s.extract)}</p>
     <p class="readon"><b>Read the full article</b><span id="readon"><a href="${esc(s.content_urls?.desktop?.page)}" ${ext}>Wikipedia</a></span></p>
     ${otherLinks.length ? `<p class="others">Did you mean: ${otherLinks.map(o => `<a data-go="${esc(o)}">${esc(o)}</a>`).join(" · ")}</p>` : ""}`;
+  /* sent here by a wing because the topic isn't that wing's kind of thing (Sombrero the hat, from the Observatory): a way back */
+  const fromW = Myriad.WINGS.find(w => w.id === new URLSearchParams(location.search).get("from"));
+  if(fromW && new URLSearchParams(location.search).get("t") === title)
+    $("lead").insertAdjacentHTML("afterbegin", `<p class="back-wing" style="--c:var(--c-${fromW.id})"><a href="${Myriad.ROOT}${fromW.id}/">← Back to the ${esc(fromW.name)}</a></p>`);
 
   /* ask for a 960px copy rather than the full original (which can be several MB) */
   const thumb = s.thumbnail?.source, orig = s.originalimage;
@@ -558,6 +562,6 @@ if(p.get("t")) openTopic(p.get("t"));
 else if(p.get("q")) search(p.get("q"));
 }
 </script>
-<script src="front.js?v=20261120v"></script>
+<script src="front.js?v=20261121d"></script>
 </body>
 </html>
