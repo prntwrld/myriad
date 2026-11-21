@@ -71,13 +71,6 @@ const PAGES = {
     chips: ["Alice Coltrane","Talking Heads","Krautrock","Bossa nova","Nina Simone","Sun Ra"],
     feature: {label:"Start with a record", sub:"Albums that open whole worlds — a preview of the record shelf", photos:true,
       items:["Kind of Blue","A Love Supreme","Pet Sounds","Blue (Joni Mitchell album)","Remain in Light","Illmatic","Unknown Pleasures","OK Computer"]},
-    plan: [
-      ["Discography","Every release on a shelf of covers, from MusicBrainz and the Cover Art Archive."],
-      ["If you like this","Similar artists and listening paths from ListenBrainz."],
-      ["Listen","Samples and links out to Bandcamp, streaming services, and free live recordings."],
-      ["The scene","Bandmates, labels, producers, and the city and era it came from."],
-      ["Genre map","Where it sits among neighbouring sounds, and the records that define each one."],
-      ["Liner notes","Credits, the story of the recording, and the best writing about it."]],
     rooms: {
       "Dig": [
         {t:"MusicBrainz", u:"https://musicbrainz.org", why:"The open encyclopedia of recorded music."},
@@ -90,7 +83,7 @@ const PAGES = {
       "Read": [
         {t:"AllMusic", u:"https://www.allmusic.com", why:"Reviews, biographies and similar-artist maps."},
         {t:"KEXP", u:"https://www.kexp.org", why:"Seattle's listener-powered station and live sessions."}]},
-    sources: "MusicBrainz, the Cover Art Archive, ListenBrainz, Wikidata, the Internet Archive"
+    sources: "MusicBrainz, the Cover Art Archive, ListenBrainz, Wikidata, Wikipedia and the Internet Archive's Live Music Archive"
   },
 
   "gallery": {

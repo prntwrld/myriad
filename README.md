@@ -23,6 +23,14 @@ A search in the Observatory that turns out not to be about space (Sombrero the h
 
 On this day uses `observatory/days.json`, made ahead of time by `tools/build_observatory_data.py` (run it from the repository root now and then; it takes a few minutes).
 
+**Metronome** has its own topic pages too (`metronome/metronome.js`). A record gets its cover big beside the title, its tracklist with who wrote each song, everyone credited on it, its awards and certifications, what it sampled and what sampled it (from MusicBrainz's sample credits, or else its influences, or the records either side of it), and the year's other best-known records. An artist gets a discography wall of covers by decade (the best-known 40, the rest on request), releases per year, bandmates and collaborators drawn as a web, who influenced them and whom they influenced, similar artists (ListenBrainz), where to listen (the links MusicBrainz lists, then searches), concerts from the Live Music Archive that play on the page, and, for film composers, their scores, each opening in Cinema. A genre, scene or label gets its defining records, its artists, where it came from and what came after, and its relatives. A record known only to MusicBrainz gets a page of its own (`?rg=`).
+
+MusicBrainz is asked no more than once a second, and the Cover Art Archive's covers load one a second, only for records Wikipedia has no cover for. Wikidata is read through its regular API (entity lookups, and its search's `haswbstatement:` for "the records this artist performs on"), which stays quick when the query service is busy.
+
+Metronome's front page (`metronome/landing.js`) opens on a record of the day, then a wall of covers, Drift through bandmates, producers, labels and similar artists (a film composer links back to Cinema), a year dial, a map of music scenes by city, a concert from the Live Music Archive to play straight through, and your collection. The year dial and "Also in [year]" use `metronome/data.json`, the best-known records of every year since 1950, made ahead of time by `tools/build_metronome_data.py` (run it from the repository root; when the query service is limiting traffic, `PAUSE=62 CACHE=/tmp/years.json python3 tools/build_metronome_data.py` paces it to one query a minute and can pick up where it stopped). Until that file exists they ask the query service live.
+
+A search in Metronome that turns out not to be about music goes to Myriad's general page, with a link back.
+
 ## Discovery
 Myriad should let you find things you didn't know to look for. `discover.js` holds the pieces every wing shares: picks of the day that are the same for everyone and change at midnight, **Drift** (a walk from one thing to a connected thing, one step at a time, saying why), and **your trail** (what you've wandered through across Myriad, kept only in your browser).
 
@@ -38,6 +46,7 @@ On this day and the door use `cinema/data.json`, thousands of well-known films a
 - [Internet Archive](https://archive.org)
 - [Library of Congress](https://www.loc.gov/photos/) prints & photographs
 - [Wikimedia Commons](https://commons.wikimedia.org) images, and Xeno-canto's recordings
+- [MusicBrainz](https://musicbrainz.org), the [Cover Art Archive](https://coverartarchive.org), [ListenBrainz](https://listenbrainz.org) and the [Live Music Archive](https://archive.org/details/etree)
 - [iNaturalist](https://www.inaturalist.org), [GBIF](https://www.gbif.org) and [Xeno-canto](https://xeno-canto.org)
 - [NASA](https://images.nasa.gov) (the Image and Video Library and the Astronomy Picture of the Day) and [Launch Library 2](https://thespacedevs.com/llapi)
 - Star maps from [d3-celestial](https://github.com/ofrohn/d3-celestial) by Olaf Frohn (BSD-3-Clause), after the Hipparcos catalogue; the Milky Way from above by NASA/JPL-Caltech/R. Hurt

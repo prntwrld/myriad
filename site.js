@@ -15,7 +15,7 @@ const ALL_WINGS = [
     try:["Steller's jay","Western redcedar","Orca"]},
   {id:"gallery", name:"Gallery", line:"Art and architecture: paintings, buildings, the people who made them, and the movements they made.",
     try:["Fallingwater","Hokusai","Art Nouveau"]},
-  {id:"metronome", name:"Metronome", line:"Music to discover: records, artists, scenes, and what to play next.",
+  {id:"metronome", name:"Metronome", ready:true, line:"Music to discover: records, artists, scenes, and what to play next.",
     try:["Kind of Blue","Joni Mitchell","Krautrock"]},
   {id:"observatory", name:"Observatory", ready:true, line:"Space: planets, stars, missions, and what's in tonight's sky.",
     try:["Saturn","Andromeda Galaxy","Voyager 1"]}
@@ -34,7 +34,7 @@ const RULES = {
   "cinema": c => has(c,"P4947") || has(c,"P1258") || any(vals(c,"P31"), ["Q11424","Q24869","Q202866","Q93204","Q5398426","Q3001152","Q201658"]) ||
     any(vals(c,"P106"), ["Q2526255","Q3455803","Q28389","Q222344","Q7042855","Q10800557","Q33999"]),
   /* MusicBrainz lists anyone with a credit (Godard has one), so a person counts only if music is their work */
-  "metronome": c => any(vals(c,"P31"), ["Q215380","Q5741069","Q482994","Q7366","Q134556","Q188451"]) ||
+  "metronome": c => any(vals(c,"P31"), ["Q215380","Q5741069","Q482994","Q7366","Q134556","Q188451","Q18127","Q208569","Q209939","Q169930"]) || has(c,"P966") || has(c,"P8052") ||
     any(vals(c,"P106"), ["Q639669","Q177220","Q36834","Q488205","Q2252262","Q753110","Q855091","Q486748","Q130857","Q183945"]) ||
     (!vals(c,"P31").includes("Q5") && (has(c,"P434") || has(c,"P436"))),
   "observatory": c => has(c,"P59") || has(c,"P397") || has(c,"P2583") || has(c,"P1096") || has(c,"P619") || has(c,"P6257") ||
@@ -61,6 +61,13 @@ const OWN = {
     ["Q2526255","Q3455803","Q28389","Q222344","Q7042855","Q10800557","Q33999"].includes(vals(c,"P106")[0]),
   /* living things: anything with a scientific name, or that Wikidata calls a taxon; a person named after a plant stays put */
   "field-guide": c => !vals(c,"P31").includes("Q5") && (has(c,"P225") || has(c,"P3151") || any(vals(c,"P31"), ["Q16521","Q55983715"])),
+  /* records, songs, bands, genres and record labels, and people whose first-listed work is music;
+     an actor who also sings (first listed as an actor) stays on the main page */
+  "metronome": c => has(c,"P436") || has(c,"P966") || has(c,"P8052") ||
+    any(vals(c,"P31"), ["Q482994","Q208569","Q209939","Q169930","Q222910","Q134556","Q7366","Q4176708","Q188451","Q215380","Q5741069","Q2088357","Q9212979","Q2491498","Q18127"]) ||
+    (!vals(c,"P31").includes("Q5") && has(c,"P434")) ||
+    ["Q639669","Q177220","Q36834","Q488205","Q753110","Q855091","Q486748","Q130857","Q183945","Q158852","Q1259917","Q584301","Q1415090","Q386854",
+     "Q12800682","Q806349","Q1075651","Q2252262","Q1327329","Q4351403","Q2643890"].includes(vals(c,"P106")[0]),
   /* things in the sky and the craft sent to them: anything with a launch date, a place among the stars, a body it orbits
      or a distance from Earth; a person (an astronomer, an astronaut) stays on the main page unless space is all they're known for */
   "observatory": c => !vals(c,"P31").includes("Q5") && (has(c,"P619") || has(c,"P59") || has(c,"P397") || has(c,"P2583") || has(c,"P6257") || has(c,"P1096") ||

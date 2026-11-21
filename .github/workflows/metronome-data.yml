@@ -1,0 +1,31 @@
+# Builds metronome/data.json (the best-known records of every year, behind Metronome's year dial)
+# from Wikidata, every Tuesday and whenever it's started by hand, and commits it if it changed.
+name: Metronome data
+on:
+  schedule:
+    - cron: "43 7 * * 2"   # Tuesdays, early morning UTC
+  workflow_dispatch: {}
+permissions:
+  contents: write
+concurrency:
+  group: metronome-data
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build metronome/data.json
+        run: python3 tools/build_metronome_data.py
+      - name: Commit if changed
+        run: |
+          git add metronome/data.json
+          if git diff --cached --quiet; then echo "No change."; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898341+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Refresh Metronome's year data from Wikidata"
+          git push

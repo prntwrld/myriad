@@ -1394,3 +1394,178 @@ button.ob-map-play{width:40px;padding:0;letter-spacing:0;font-size:14px}
   .sm-chart .sm-mark text{font-size:30px}
   .sm-galaxy .sm-mark text{font-size:34px}
 }
+
+/* ======================================================================
+   Metronome: records, artists, genres and scenes, and the front page.
+   ====================================================================== */
+#mtopic{display:none} body.on #mtopic{display:block}
+/* the picture first on a phone, as in the other wings */
+@media (max-width:760px){
+  #mtopic .hero .side{display:contents}
+  #mtopic .hero .plate{order:-1}
+  #mtopic .hero .plate .pic{max-height:340px}
+}
+/* a record's cover: square, whole */
+.plate.is-cover .pic{aspect-ratio:1;max-height:none;object-fit:cover}
+@media (max-width:760px){ .plate.is-cover{max-width:340px;margin:0 auto} #mtopic .hero .plate.is-cover .pic{max-height:none} }
+/* a genre with no picture of its own: four of its covers */
+.plate.mt-mosaic{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.plate.mt-mosaic a{display:block;aspect-ratio:1;overflow:hidden;background:var(--soft)}
+.plate.mt-mosaic img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s ease}
+.plate.mt-mosaic a:hover img{transform:scale(1.04)}
+
+/* covers are square */
+.poster.rec .frame,.poster.mt-gcard .frame{aspect-ratio:1}
+.poster.rec .cover{-webkit-line-clamp:6}
+.wall.strip.mt-strip .poster{flex:0 0 140px}
+.mt-wall{grid-template-columns:repeat(auto-fill,minmax(124px,1fr))}
+.mt-more{padding-left:0}
+.mt-disco .mt-more,#s-recs .mt-more{padding-left:calc(5.5em + 20px)}
+@media (max-width:760px){
+  .mt-disco .mt-more,#s-recs .mt-more{padding-left:0}
+  .wall.strip.mt-strip .poster{flex-basis:118px}
+  .mt-wall{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 12px}
+}
+
+/* the tracklist: number, title (and who wrote it), length */
+.mt-tracklist{max-width:780px}
+.mt-tracklist .minor:first-child{margin-top:0}
+.mt-tl{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule)}
+.mt-tl li{display:grid;grid-template-columns:2.6em minmax(0,1fr) auto;column-gap:12px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line);font-size:18px;line-height:1.3}
+.mt-tl .n{font:600 13px/1 var(--display);color:var(--accent);font-variant-numeric:lining-nums}
+.mt-tl .tt i{color:var(--muted)}
+.mt-tl .w{display:block;color:var(--muted);font-size:14.5px;font-style:italic;margin-top:2px}
+.mt-tl .d{color:var(--muted);font-size:15px;font-variant-numeric:tabular-nums lining-nums}
+
+/* credits: faces, then everyone with what they did */
+.mt-credits{columns:2 320px;column-gap:44px;margin-top:24px}
+.faces + .mt-credits{margin-top:26px}
+.mt-credits:first-child{margin-top:0}
+
+/* before & after: a column with nothing in it leaves the thing itself at the edge */
+.mt-ba.no-from{grid-template-columns:auto minmax(0,1fr)}
+.mt-ba.no-to{grid-template-columns:auto auto;justify-content:start}
+.mt-ba.no-to .ba-col:first-child .ba-list{justify-content:flex-start}
+.mt-ba.no-to .ba-col:first-child .minor{text-align:left}
+.mt-ba .ba-item{width:112px}
+.mt-ba .ba-item .face{display:block}
+.mt-ba .ba-this .face{width:150px;display:block}
+.mt-ba .ba-this .face .ph{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
+.mt-ba .ba-this .face img{filter:none}
+.mt-gword{display:block;padding:14px 10px;border:1px solid var(--line);background:var(--paper);font:italic 17px/1.25 "EB Garamond",serif;text-align:center;
+  color:var(--ink);text-decoration:none}
+.mt-gword:hover{border-color:var(--accent);color:var(--accent)}
+.mt-me .frame{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent),0 14px 26px -14px var(--shadow)}
+@media (max-width:760px){
+  .mt-ba.no-from,.mt-ba.no-to{grid-template-columns:1fr}
+  .mt-ba.no-to .ba-col:first-child .ba-list{justify-content:flex-start}
+  .mt-ba .ba-item{width:calc((100% - 28px) / 3)}
+  .mt-ba .ba-this .face{width:140px}
+}
+
+/* a film composer's way to Cinema */
+.readon a.in-cinema{color:var(--c);font-weight:600}
+.readon a.in-cinema::after{content:" →"}
+
+/* concerts from the Live Music Archive on an artist's page */
+.mt-live{margin-top:22px}
+.mt-shows{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule);max-width:780px;columns:2 360px;column-gap:28px}
+.mt-shows li{break-inside:avoid;border-bottom:1px solid var(--line)}
+button.mt-show{display:grid;grid-template-columns:7.2em minmax(0,1fr) auto;column-gap:12px;align-items:baseline;width:100%;text-align:left;min-height:0;padding:9px 2px;
+  background:none;border:0;border-radius:0;color:var(--ink);font:400 16.5px/1.3 "EB Garamond",serif;letter-spacing:0;text-transform:none;cursor:pointer}
+button.mt-show:hover,button.mt-show[aria-pressed="true"]{background:none;color:var(--accent)}
+.mt-sh-date{font-variant-numeric:tabular-nums lining-nums;color:var(--muted);font-size:15px}
+.mt-sh-where{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.mt-sh-go{color:var(--accent);font-size:12px}
+.mt-showbox{margin-top:18px;max-width:780px}
+.mt-sh-head{margin:0 0 10px;font-size:16px;color:var(--muted)}
+.mt-sh-head b{color:var(--ink);font-weight:600}
+
+/* ---------- the front page ---------- */
+/* the record of the day: a square cover in the Now showing frame */
+.ch-poster.mt-cover{aspect-ratio:1;height:80%;max-height:380px}
+@media (max-width:1000px) and (min-width:761px){ .ch-poster.mt-cover{height:260px} }
+@media (max-width:760px){
+  .mt-hero .ch-frame{grid-template-columns:minmax(0,1fr);align-items:start;gap:18px;padding:24px 20px 26px}
+  .ch-poster.mt-cover{width:min(100%,300px);height:auto;min-height:0;max-height:none;margin:0 auto}
+  .mt-hero .ch-title{font-size:30px}
+}
+/* the wall of covers */
+.mt-tiles{grid-template-columns:repeat(auto-fill,minmax(112px,1fr))}
+@media (max-width:760px){ .mt-tiles{grid-template-columns:repeat(4,minmax(0,1fr))} }
+@media (max-width:420px){ .mt-tiles{grid-template-columns:repeat(3,minmax(0,1fr))} }
+
+/* the year dial: a tuning scale with a needle, the year above it */
+.mt-dial{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:18px;align-items:end;max-width:900px;margin:0 auto 26px}
+.mt-face{position:relative;padding-bottom:4px}
+.mt-year{display:block;text-align:center;font:600 clamp(44px,7vw,72px)/1 var(--display);letter-spacing:.06em;color:var(--accent);font-variant-numeric:lining-nums;margin-bottom:12px}
+.mt-scale{position:relative;height:40px;border-bottom:1px solid var(--rule);
+  background:repeating-linear-gradient(90deg,var(--line) 0 1px,transparent 1px calc(100% / (var(--hi) - var(--lo)))) bottom/100% 12px no-repeat}
+.mt-scale span{position:absolute;bottom:0;left:calc(var(--x) * 100%);transform:translateX(-50%);padding-bottom:16px;font:600 11px/1 var(--display);letter-spacing:.08em;color:var(--muted)}
+.mt-scale span::after{content:"";position:absolute;left:50%;bottom:0;height:20px;border-left:1px solid var(--ink)}
+.mt-face input[type=range]{position:absolute;left:0;right:0;bottom:-8px;width:100%;height:56px;margin:0;background:transparent;-webkit-appearance:none;appearance:none;cursor:pointer}
+.mt-face input[type=range]::-webkit-slider-runnable-track{height:56px;background:transparent}
+.mt-face input[type=range]::-moz-range-track{height:56px;background:transparent}
+.mt-face input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:4px;height:52px;margin-top:2px;background:var(--accent);border:0;border-radius:2px;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+.mt-face input[type=range]::-moz-range-thumb{width:4px;height:52px;background:var(--accent);border:0;border-radius:2px;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+.mt-face input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+button.mt-step{width:44px;height:44px;min-height:0;padding:0;border-radius:50%;font:400 26px/1 var(--display);letter-spacing:0;display:grid;place-items:center;margin-bottom:4px}
+.mt-dial-wall{grid-template-columns:repeat(auto-fill,minmax(124px,1fr))}
+@media (max-width:760px){ .mt-dial-wall{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 12px} }
+/* Drift: records, labels and genres stand in square frames */
+.dc-img.square,.dn-img.square{aspect-ratio:1}
+.dn-img.square{align-self:start}
+@media (max-width:760px){
+  .mt-dial{gap:10px}
+  .mt-scale span:nth-child(even){visibility:hidden}
+  button.mt-step{width:38px;height:38px;font-size:22px}
+}
+
+/* scenes: the map beside the chosen city */
+.mt-map{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:32px;align-items:start}
+.mt-map-draw{height:440px;border:1px solid var(--line);z-index:0;background:var(--soft)}
+.mt-map-draw .leaflet-tile-pane{filter:grayscale(1) contrast(.95) brightness(1.04)}
+:root[data-theme="dark"] .mt-map-draw .leaflet-tile-pane{filter:grayscale(1) invert(1) brightness(.85) contrast(.9)}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]):not([data-theme="y2k"]) .mt-map-draw .leaflet-tile-pane{filter:grayscale(1) invert(1) brightness(.85) contrast(.9)} }
+.mt-pin{background:none;border:0}
+.mt-pin i{display:block;width:10px;height:10px;margin:4px;background:var(--accent);transform:rotate(45deg);box-shadow:0 0 0 2px var(--bg);transition:transform .15s ease}
+.mt-pin:hover i{transform:rotate(45deg) scale(1.35)}
+.mt-pin.on i{width:14px;height:14px;margin:2px;box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
+.mt-city{margin:0 0 12px;font:600 clamp(24px,3vw,32px)/1.1 var(--display);letter-spacing:.06em}
+.mt-scene-pick{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+.mt-scene-pick button{min-height:0;padding:6px 14px;border-radius:0 !important;background:var(--paper);color:var(--ink);border:1px solid var(--line);
+  font:400 16px/1.2 "EB Garamond",serif;letter-spacing:0;text-transform:none}
+.mt-scene-pick button:hover{background:var(--paper);color:var(--ink);border-color:var(--accent)}
+.mt-scene-pick button[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 -3px 0 var(--accent);font-weight:600}
+.mt-scene .wall.strip.mt-strip .poster{flex-basis:118px}
+.mt-scene-open{margin:14px 0 0;font-size:17px}
+.mt-scene-open a::after{content:" →"}
+@media (max-width:860px){ .mt-map{grid-template-columns:minmax(0,1fr);gap:20px} .mt-map-draw{height:320px} }
+
+/* live, from the Archive: the band, the night, and the show playing straight through */
+.mt-lc{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:32px;align-items:center;margin-bottom:22px}
+.mt-lc-img{display:block;aspect-ratio:1;overflow:hidden;background:var(--plank);border:1px solid var(--line)}
+.mt-lc-img img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .6s ease}
+.mt-lc-img:hover img{transform:scale(1.03)}
+.mt-lc-kicker{margin:0;font:600 11px/1.2 var(--display);letter-spacing:.24em;text-transform:uppercase;color:var(--accent)}
+.mt-lc-by{margin:8px 0 0;font:500 clamp(30px,4vw,44px)/1.05 "EB Garamond",serif}
+.mt-lc-by a{color:var(--ink);text-decoration:none}
+.mt-lc-by a:hover{color:var(--accent)}
+.mt-lc-when{margin:8px 0 0;font-size:18px;color:var(--muted);font-style:italic}
+.mt-lc-ctl{margin:20px 0 0;display:flex;flex-wrap:wrap;gap:12px;align-items:center;font-size:16px}
+.mt-lc-ctl button{border-radius:999px;min-height:42px;padding:0 20px}
+.mt-lc-ctl a::after{content:" ↗"}
+#d-live-tracks .fg-tracks{max-width:none;columns:2 380px;column-gap:28px}
+#d-live-tracks .fg-track{break-inside:avoid}
+@media (max-width:760px){
+  .mt-lc{grid-template-columns:minmax(0,1fr);gap:16px}
+  .mt-lc-img{aspect-ratio:16/10}
+}
+
+/* Y2K versions */
+:root[data-theme="y2k"]{
+  & .plate.mt-mosaic a,& .mt-lc-img,& .mt-map-draw{border-radius:12px}
+  & .mt-year{font:bold clamp(40px,6vw,64px)/1 var(--y-font);color:#1477e6}
+  & .mt-pin i{background:#1477e6}
+  & .mt-scene-pick button{border-radius:999px !important;font:bold 14px var(--y-font)}
+}
