@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poverty Bay</title>
+<meta name="description" content="A living window on Poverty Bay, Puget Sound: the real sun, tide and weather, with an ambient soundtrack made from them.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* VOICE  quiet, ambient, a window you leave on
+   IDEA   a 1970s travel poster of Poverty Bay that is alive: the real sun, tide and weather
+   PICTURE the whole screen: sky, striped sun, the Olympics, Maury Island, the water, Redondo's beach and pier
+   COLOUR whatever the sky is doing right now; the interface stays out of its way
+   TYPE   Jost, light and wide, like the lettering on an old poster */
+html,body{margin:0;height:100%;background:#0b1026;overflow:hidden;color:#f4efe4;font:16px/1.4 "Jost","Futura",system-ui,sans-serif}
+canvas{position:fixed;inset:0;width:100vw;height:100vh;display:block}
+.ui{position:fixed;inset:auto 0 0 0;display:flex;justify-content:space-between;align-items:flex-end;gap:20px;
+  padding:clamp(18px,4vw,48px);pointer-events:none;transition:opacity 1.2s ease}
+.ui.idle{opacity:0}
+.placard{max-width:560px;text-shadow:0 1px 12px rgba(0,0,0,.35)}
+.placard h1{margin:0 0 10px;font-weight:300;font-size:clamp(26px,4vw,44px);letter-spacing:.32em;text-transform:uppercase;line-height:1}
+.placard p{margin:4px 0 0;font-weight:400;font-size:clamp(14px,1.6vw,17px);letter-spacing:.02em;opacity:.92}
+.placard .when{font-weight:500;letter-spacing:.12em;text-transform:uppercase;font-size:13px;opacity:.8}
+.ctl{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end;pointer-events:auto}
+button{font:500 13px/1 "Jost",system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#f4efe4;cursor:pointer;
+  background:rgba(10,14,30,.28);border:1px solid rgba(244,239,228,.45);border-radius:999px;min-height:44px;padding:0 18px;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:background .2s ease,border-color .2s ease}
+button:hover{background:rgba(244,239,228,.16);border-color:#f4efe4}
+button:focus-visible{outline:2px solid #f4efe4;outline-offset:3px}
+button[aria-pressed="true"]{background:#f4efe4;color:#14182c}
+input[type=range]{width:110px;accent-color:#f4efe4}
+.vol{display:none;align-items:center;gap:8px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.85}
+.vol.on{display:flex}
+@media (max-width:640px){
+  .ui{flex-direction:column;align-items:stretch}
+  .ctl{justify-content:flex-start}
+  .placard h1{letter-spacing:.24em}
+}
+@media (prefers-reduced-motion:reduce){.ui{transition:none}}
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="Poverty Bay, as it looks right now"></canvas>
+<div class="ui" id="ui">
+  <div class="placard">
+    <h1>Poverty Bay</h1>
+    <p class="when" id="when"></p>
+    <p id="tideline"></p>
+    <p id="wxline"></p>
+  </div>
+  <div class="ctl">
+    <label class="vol" id="vol">Volume <input type="range" id="volume" min="0" max="1" step="0.01" value="0.7" aria-label="Volume"></label>
+    <button type="button" id="listen" aria-pressed="false">Listen</button>
+    <button type="button" id="lapse" aria-pressed="false">A day in a minute</button>
+    <button type="button" id="full">Full screen</button>
+  </div>
+</div>
+<script>
+{
+/* ================= where, and the data ================= */
+const LAT = 47.349, LON = -122.326;            /* Redondo Beach, Des Moines WA, looking west across Poverty Bay */
+const TIDE_STATION = "9446484";                /* NOAA: Tacoma, the nearest tide station */
+const $ = id => document.getElementById(id);
+const rad = Math.PI / 180, deg = 180 / Math.PI;
+
+/* ---------- the sun, computed (no data needed) ---------- */
+function sunPos(t){
+  const n = (t - Date.UTC(2000, 0, 1, 12)) / 864e5;
+  const L = (280.459 + 0.98564736 * n) % 360, g = (357.529 + 0.98560028 * n) * rad;
+  const lam = (L + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g)) * rad, eps = (23.439 - 3.6e-7 * n) * rad;
+  const ra = Math.atan2(Math.cos(eps) * Math.sin(lam), Math.cos(lam)), dec = Math.asin(Math.sin(eps) * Math.sin(lam));
+  const gmst = (18.697374558 + 24.06570982441908 * n) % 24;
+  const H = ((gmst * 15 + LON) * rad - ra), phi = LAT * rad;
+  const alt = Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(H));
+  const az = (Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(phi) - Math.tan(dec) * Math.cos(phi)) * deg + 180 + 360) % 360;
+  return {alt: alt * deg, az};
+}
+/* the moon: its phase from a known new moon; it rides roughly the sun's path, a phase-fraction of a day behind */
+const SYN = 29.530588853, NEW = Date.UTC(2000, 0, 6, 18, 14);
+const moonPhase = t => (((t - NEW) / 864e5) % SYN + SYN) % SYN / SYN;
+const moonPos = t => sunPos(t - moonPhase(t) * 24.84 * 36e5);
+
+/* ---------- the tide: NOAA's predictions for Tacoma, every six minutes ---------- */
+let tide = null, tideEstimated = false;
+const ymd = d => d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
+async function loadTide(){
+  const start = new Date(Date.now() - 864e5);
+  const base = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&application=poverty_bay_window"
+    + `&begin_date=${ymd(start)}&range=96&datum=MLLW&station=${TIDE_STATION}&time_zone=gmt&units=english&format=json`;
+  try {
+    const [six, hilo] = await Promise.all([fetch(base + "&interval=6").then(r => r.json()), fetch(base + "&interval=hilo").then(r => r.json())]);
+    const pts = (six.predictions || []).map(p => ({t: Date.parse(p.t.replace(" ", "T") + "Z"), v: +p.v}));
+    if(pts.length < 10) throw new Error("no predictions");
+    tide = {pts, hilo: (hilo.predictions || []).map(p => ({t: Date.parse(p.t.replace(" ", "T") + "Z"), v: +p.v, type: p.type}))};
+    tideEstimated = false;
+  } catch(e){
+    /* no answer from NOAA: a stand-in mixed tide with Tacoma's rough shape, and the placard says so */
+    tideEstimated = true;
+    const pts = [], hilo = [];
+    for(let t = Date.now() - 864e5; t < Date.now() + 3 * 864e5; t += 36e4){
+      const h = (t - Date.UTC(2026, 0, 1)) / 36e5;
+      pts.push({t, v: 7 + 4.6 * Math.cos(2 * Math.PI * h / 12.42) + 2.4 * Math.cos(2 * Math.PI * h / 23.93 + 1.1)});
+    }
+    for(let i = 1; i < pts.length - 1; i++){
+      if(pts[i].v > pts[i - 1].v && pts[i].v >= pts[i + 1].v) hilo.push({...pts[i], type: "H"});
+      if(pts[i].v < pts[i - 1].v && pts[i].v <= pts[i + 1].v) hilo.push({...pts[i], type: "L"});
+    }
+    tide = {pts, hilo};
+  }
+}
+function tideAt(t){
+  const p = tide?.pts; if(!p) return null;
+  let i = Math.max(0, Math.min(p.length - 2, Math.floor((t - p[0].t) / 36e4)));
+  while(i > 0 && p[i].t > t) i--;
+  while(i < p.length - 2 && p[i + 1].t < t) i++;
+  const a = p[i], b = p[i + 1], k = Math.max(0, Math.min(1, (t - a.t) / (b.t - a.t || 1)));
+  return {v: a.v + (b.v - a.v) * k, rising: b.v > a.v};
+}
+const nextTurn = t => tide?.hilo.find(h => h.t > t);
+
+/* ---------- the weather: Open-Meteo, right now, refreshed every quarter hour ---------- */
+let wx = null;
+async function loadWeather(){
+  try {
+    const j = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,weather_code,visibility&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=mm&timezone=America%2FLos_Angeles`).then(r => r.json());
+    const c = j.current; if(!c) throw new Error("no weather");
+    wx = {temp: c.temperature_2m, precip: c.precipitation || 0, cloud: c.cloud_cover ?? 30, wind: c.wind_speed_10m || 0,
+      dir: c.wind_direction_10m || 0, code: c.weather_code ?? 0, vis: c.visibility ?? 20000};
+  } catch(e){ wx = null; }
+}
+const WMO = {0:"clear",1:"mostly clear",2:"partly cloudy",3:"overcast",45:"fog",48:"freezing fog",51:"light drizzle",53:"drizzle",55:"heavy drizzle",
+  56:"freezing drizzle",57:"freezing drizzle",61:"light rain",63:"rain",65:"heavy rain",66:"freezing rain",67:"freezing rain",71:"light snow",73:"snow",
+  75:"heavy snow",77:"snow grains",80:"rain showers",81:"rain showers",82:"heavy showers",85:"snow showers",86:"snow showers",95:"thunderstorm",96:"thunderstorm",99:"thunderstorm"};
+const COMPASS = ["north","northeast","east","southeast","south","southwest","west","northwest"];
+const isRain = c => (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95;
+const isSnow = c => (c >= 71 && c <= 77) || c === 85 || c === 86;
+const isFog = c => c === 45 || c === 48;
+
+/* ================= colour ================= */
+const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const mix = (a, b, k) => a.map((x, i) => x + (b[i] - x) * k);
+const css = (c, a = 1) => `rgba(${c.map(Math.round).join(",")},${a})`;
+/* the sky by the sun's height: top, middle, horizon */
+const SKY = [[-18, "#070a18", "#0d1430", "#161d3d"], [-10, "#0c1332", "#1d2452", "#3b2f5e"], [-4, "#1b2a5c", "#6a4a7a", "#df7a5a"],
+  [0, "#2d4884", "#c66f78", "#f5a259"], [5, "#4f74b0", "#e7a07c", "#f7cf8b"], [15, "#6d98cf", "#a9c4df", "#e9e2cf"], [45, "#5a8dcf", "#9cc0e6", "#dfe9ef"]]
+  .map(([a, ...c]) => [a, c.map(hex)]);
+function skyAt(alt, cloud){
+  let i = 0; while(i < SKY.length - 2 && alt > SKY[i + 1][0]) i++;
+  const [a0, c0] = SKY[i], [a1, c1] = SKY[i + 1], k = Math.max(0, Math.min(1, (alt - a0) / (a1 - a0)));
+  let c = c0.map((x, j) => mix(x, c1[j], k));
+  /* overcast greys the sky, more by day, and a grey that stays dark at night */
+  const light = Math.max(0, Math.min(1, (alt + 8) / 20)), grey = [hex("#1b1e26"), hex("#262a33"), hex("#30343c")].map((g, j) => mix(g, hex(["#6c7480", "#9aa1a8", "#b8bbbb"][j]), light));
+  const o = Math.min(.82, (cloud / 100) * .85);
+  return c.map((x, j) => mix(x, grey[j], o));
+}
+
+/* ================= the scene ================= */
+const cv = $("c"), cx = cv.getContext("2d");
+let W = 0, H = 0, DPR = 1;
+function resize(){ DPR = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = W * DPR; cv.height = H * DPR; cx.setTransform(DPR, 0, 0, DPR, 0, 0); build(); }
+/* fixed shapes, seeded so the coastline never changes */
+let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+let olympics = [], island = [], stars = [], pilings = [], grain = null, drops = [];
+function build(){
+  seed = 7;
+  const hz = H * .58;
+  olympics = []; for(let x = 0, y = 0; x <= 1.0001; x += .012){ y = .25 + .55 * Math.abs(Math.sin(x * 9.1 + 1.3)) * (.6 + .4 * Math.sin(x * 3.3)) + rnd() * .35; olympics.push([x, Math.max(0, y)]); }
+  /* Maury Island: low and rounded, sloping down into the water at its south point */
+  island = []; for(let x = 0; x <= 1.0001; x += .02){ const taper = Math.min(1, (1 - x) / .22) ** 1.6; island.push([x, taper * (.55 + .35 * Math.sin(x * 2.6 + .4) + .12 * Math.sin(x * 11) + rnd() * .06)]); }
+  stars = Array.from({length: 180}, () => [rnd(), rnd() * .55, rnd() * 1.2 + .3, rnd() * 6.28]);
+  pilings = Array.from({length: 7}, (_, i) => ({x: .71 + i * .042 + i * i * .0016, w: 7 + i * 2.2}));
+  drops = Array.from({length: 420}, () => [rnd(), rnd(), .6 + rnd() * .8]);
+  /* a tile of film grain */
+  grain = document.createElement("canvas"); grain.width = grain.height = 160;
+  const g = grain.getContext("2d"), d = g.createImageData(160, 160);
+  for(let i = 0; i < d.data.length; i += 4){ const v = rnd() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 18; }
+  g.putImageData(d, 0, 0);
+  void hz;
+}
+addEventListener("resize", resize);
+
+/* the view faces west: azimuth 185° at the left edge to 355° at the right */
+const azToX = az => (az - 185) / 170 * W;
+const altToY = (alt, hz) => hz - alt * (H * .018);
+
+function draw(t, now){
+  const s = sunPos(t), cloud = wx ? wx.cloud : 15, code = wx ? wx.code : 0, wind = wx ? wx.wind : 4;
+  const hz = H * .58, [top, mid, bot] = skyAt(s.alt, cloud);
+  const day = Math.max(0, Math.min(1, (s.alt + 6) / 18));
+
+  /* sky */
+  let gr = cx.createLinearGradient(0, 0, 0, hz);
+  gr.addColorStop(0, css(top)); gr.addColorStop(.62, css(mid)); gr.addColorStop(1, css(bot));
+  cx.fillStyle = gr; cx.fillRect(0, 0, W, hz + 1);
+
+  /* stars, on clear nights */
+  const night = Math.max(0, Math.min(1, (-s.alt - 7) / 6)) * (1 - cloud / 100);
+  if(night > .02) for(const [x, y, r, ph] of stars){
+    cx.fillStyle = `rgba(255,248,235,${night * (.45 + .4 * Math.sin(now / 900 + ph))})`;
+    cx.fillRect(x * W, y * hz, r, r);
+  }
+
+  /* the moon */
+  const ph = moonPhase(t), m = moonPos(t), lit = (1 - Math.cos(ph * 2 * Math.PI)) / 2;
+  if(m.alt > -2 && lit > .06 && (1 - day) > .2){
+    const mx = azToX(m.az), my = altToY(m.alt, hz), mr = Math.max(10, H * .022);
+    if(mx > -mr && mx < W + mr){
+      cx.save(); cx.globalAlpha = (1 - day) * (1 - cloud / 140);
+      cx.fillStyle = "#f3ead6"; cx.beginPath(); cx.arc(mx, my, mr, 0, 7); cx.fill();
+      cx.fillStyle = css(mid, .92); cx.beginPath();
+      const off = (ph < .5 ? 1 : -1) * mr * 2 * lit; cx.arc(mx - off, my, mr * 1.02, 0, 7); cx.fill();
+      cx.restore();
+    }
+  }
+
+  /* the sun: an old-poster disc, striped across its lower half */
+  const sx = azToX(s.az), sy = altToY(s.alt, hz), sr = Math.max(26, H * .055);
+  if(s.alt > -4 && sx > -sr && sx < W + sr){
+    cx.save(); cx.beginPath(); cx.rect(0, 0, W, hz); cx.clip();
+    const halo = cx.createRadialGradient(sx, sy, sr * .5, sx, sy, sr * 5);
+    halo.addColorStop(0, `rgba(255,214,150,${.35 * Math.max(0, 1 - cloud / 92)})`); halo.addColorStop(1, "rgba(255,214,150,0)");
+    cx.fillStyle = halo; cx.fillRect(sx - sr * 5, sy - sr * 5, sr * 10, sr * 10);
+    const low = Math.max(0, Math.min(1, s.alt / 12));
+    const sg = cx.createLinearGradient(0, sy - sr, 0, sy + sr);
+    sg.addColorStop(0, css(mix(hex("#ffd27a"), hex("#fff3d6"), low))); sg.addColorStop(1, css(mix(hex("#e8563a"), hex("#ffd9a0"), low)));
+    cx.globalAlpha = Math.max(0, 1 - cloud / 92);
+    cx.fillStyle = sg; cx.beginPath(); cx.arc(sx, sy, sr, 0, 7); cx.fill();
+    cx.fillStyle = css(bot);
+    for(let i = 0; i < 4; i++){ const y = sy + sr * (.12 + i * .22), h = 1.5 + i * 1.6; cx.fillRect(sx - sr, y, sr * 2, h); }
+    cx.restore();
+  }
+
+  /* clouds: soft bands drifting with the wind */
+  const n = Math.round(cloud / 9);
+  for(let i = 0; i < n; i++){
+    const yy = hz * (.08 + (i * .137 % .7)), w = W * (.25 + (i * .31 % .35)), speed = (wind + 2) * .0009;
+    const xx = ((i * 197 + now * speed * (1 + i % 3)) % (W + w * 2)) - w;
+    const cg = cx.createRadialGradient(xx + w / 2, yy, 0, xx + w / 2, yy, w / 2);
+    const cc = mix(mix(mid, [255, 255, 255], .18 * day), [40, 44, 56], .25 * (cloud / 100));
+    cg.addColorStop(0, css(cc, .55)); cg.addColorStop(1, css(cc, 0));
+    cx.save(); cx.translate(0, yy); cx.scale(1, .22); cx.translate(0, -yy); cx.fillStyle = cg; cx.fillRect(xx, yy - w / 2, w, w); cx.restore();
+  }
+
+  /* the Olympics, far and pale; Maury Island, near and dark */
+  const fog = wx && (isFog(code) || wx.vis < 3000) ? 1 : 0;
+  const far = mix(mix(bot, mid, .5), [30, 36, 60], .25 * (1 - day)), near = mix(mix(mid, [18, 22, 34], .62), [12, 15, 26], .5 * (1 - day));
+  const ridge = (pts, x0, x1, base, height, col, a) => {
+    cx.fillStyle = css(col, a); cx.beginPath(); cx.moveTo(x0 * W, base);
+    for(const [x, y] of pts) cx.lineTo((x0 + (x1 - x0) * x) * W, base - y * height);
+    cx.lineTo(x1 * W, base); cx.fill();
+  };
+  ridge(olympics, .18, 1.05, hz, H * .085, far, fog ? .15 : .85 - cloud / 400);
+  ridge(island, -.05, .62, hz, H * .045, near, fog ? .35 : 1);
+
+  /* the water: the sky, darker, in poster stripes that widen toward you */
+  gr = cx.createLinearGradient(0, hz, 0, H);
+  gr.addColorStop(0, css(mix(bot, mid, .35))); gr.addColorStop(1, css(mix(top, [8, 12, 26], .45)));
+  cx.fillStyle = gr; cx.fillRect(0, hz, W, H - hz);
+  const sunUp = s.alt > -3 && sx > -W * .2 && sx < W * 1.2, glow = Math.max(0, Math.min(1, (s.alt + 3) / 10)) * Math.max(0, 1 - cloud / 92);
+  for(let k = 0, y = hz + 2; y < H; k++){
+    const gap = 3 + k * k * .09, band = 1 + k * .14, sh = Math.sin(now / 1400 + k * .9) * (2 + k * .4);
+    cx.fillStyle = css(mix(bot, [255, 255, 255], .1), .1 + .06 * Math.sin(k + now / 2200));
+    cx.fillRect(0, y, W, band);
+    if(sunUp && glow > .02){
+      const half = (6 + k * k * .55) * (1.2 - Math.min(1, s.alt / 30));
+      cx.fillStyle = `rgba(255,${190 + 40 * glow},${120 + 60 * glow},${.55 * glow})`;
+      cx.fillRect(sx - half + sh, y, half * 2, band + .6);
+    }
+    y += gap;
+  }
+
+  /* Redondo: the beach on the left and the pier on the right, and the tide over both */
+  const td = tideAt(t), level = td ? td.v : 7;
+  const wl = H * .9 - (level - 6) * H * .011;                   /* the waterline nearby: up with the tide */
+  const sand = mix(hex("#8a7a63"), [22, 24, 34], .55 * (1 - day)), wet = mix(sand, [20, 22, 30], .45);
+  cx.fillStyle = css(sand); cx.beginPath(); cx.moveTo(0, H * .76); cx.quadraticCurveTo(W * .2, H * .8, W * .46, H); cx.lineTo(0, H); cx.fill();
+  cx.fillStyle = css(wet, .9); cx.beginPath(); cx.moveTo(0, H * .83); cx.quadraticCurveTo(W * .17, H * .86, W * .36, H); cx.lineTo(0, H); cx.fill();
+  /* pilings, with the dark band the tide leaves on them */
+  const wood = mix(hex("#3b3027"), [10, 12, 20], .6 * (1 - day)), deckY = H * .66;
+  for(const p of pilings){
+    const x = p.x * W;
+    cx.fillStyle = css(wood); cx.fillRect(x, deckY, p.w, H - deckY);
+    cx.fillStyle = css(mix(wood, [18, 30, 24], .55)); cx.fillRect(x, H * .9 - (12.5 - 6) * H * .011, p.w, H);
+    cx.fillStyle = css(mix(wood, [255, 255, 255], .15)); cx.fillRect(x, deckY, Math.max(1, p.w * .18), H - deckY);
+  }
+  cx.fillStyle = css(mix(wood, [0, 0, 0], .2)); cx.fillRect(pilings[0].x * W - 30, deckY - 10, W, 12);
+  cx.fillRect(pilings[0].x * W - 30, deckY - 34, W, 3);
+  for(let x = pilings[0].x * W - 26; x < W; x += 26) cx.fillRect(x, deckY - 34, 3, 26);
+  /* the near water, over sand and pilings, with a line of foam at its edge */
+  const nearWater = mix(mix(top, bot, .3), [8, 12, 26], .5);
+  cx.fillStyle = css(nearWater, .88); cx.fillRect(0, wl, W, H - wl);
+  cx.fillStyle = css([240, 236, 226], .35 + .15 * Math.sin(now / 1500));
+  const swash = Math.sin(now / 2600) * 3 * (1 + wind / 15);
+  cx.fillRect(0, wl + swash - 1, W, 2);
+
+  /* rain or snow, slanted by the wind */
+  if(wx && (isRain(code) || isSnow(code) || wx.precip > .1)){
+    const snow = isSnow(code), count = Math.min(drops.length, Math.round(60 + wx.precip * 140 + (code >= 63 ? 120 : 0)));
+    const slant = Math.max(-.6, Math.min(.6, (wx.wind / 30) * (wx.dir > 180 ? 1 : -1)));
+    cx.strokeStyle = snow ? "rgba(250,250,255,.8)" : "rgba(220,228,240,.32)"; cx.lineWidth = snow ? 2.4 : 1; cx.lineCap = "round";
+    cx.beginPath();
+    for(let i = 0; i < count; i++){
+      const [x0, y0, sp] = drops[i], v = snow ? .00004 : .0011, len = snow ? .5 : 14 * sp;
+      const y = ((y0 + now * v * sp) % 1) * H, x = ((x0 + y / H * slant * .2 + (snow ? Math.sin(now / 900 + i) * .004 : 0)) % 1 + 1) % 1 * W;
+      cx.moveTo(x, y); cx.lineTo(x + slant * len, y + len);
+    }
+    cx.stroke();
+  }
+  /* fog: a pale veil, thickest at the water */
+  if(fog){ gr = cx.createLinearGradient(0, hz * .4, 0, H); gr.addColorStop(0, css(mix(mid, [220, 222, 226], .5), .15)); gr.addColorStop(.5, css(mix(bot, [220, 222, 226], .6), .6)); gr.addColorStop(1, css(mix(bot, [200, 204, 210], .4), .3)); cx.fillStyle = gr; cx.fillRect(0, 0, W, H); }
+
+  /* grain and a soft vignette, like a print */
+  cx.fillStyle = cx.createPattern(grain, "repeat"); cx.fillRect(0, 0, W, H);
+  const vg = cx.createRadialGradient(W / 2, H * .55, Math.min(W, H) * .35, W / 2, H * .55, Math.max(W, H) * .8);
+  vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,.35)"); cx.fillStyle = vg; cx.fillRect(0, 0, W, H);
+
+  return {s, td, day, cloud, code};
+}
+
+/* ================= the words ================= */
+const fmtTime = t => new Date(t).toLocaleTimeString("en-US", {hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles"}).toLowerCase().replace(" ", " ");
+const fmtDay = t => new Date(t).toLocaleDateString("en-US", {weekday: "long", timeZone: "America/Los_Angeles"});
+function words(t){
+  $("when").textContent = `${fmtDay(t)} · ${fmtTime(t)}${lapse ? " · a day in a minute" : ""}`;
+  const td = tideAt(t), nx = nextTurn(t);
+  $("tideline").textContent = td ? `Tide ${td.v.toFixed(1)} ft and ${td.rising ? "rising" : "falling"}${nx ? ` — ${nx.type === "H" ? "high" : "low"} ${nx.v.toFixed(1)} ft at ${fmtTime(nx.t)}` : ""}${tideEstimated ? " (estimated; NOAA didn't answer)" : ""}` : "";
+  $("wxline").textContent = wx ? `${Math.round(wx.temp)}° · ${WMO[wx.code] || "weather"} · wind ${Math.round(wx.wind)} mph from the ${COMPASS[Math.round(wx.dir / 45) % 8]}` : "";
+}
+
+/* ================= the sound ================= */
+/* Everything is made here as it plays. The light chooses the chord and how bright it sounds; the tide sets
+   how slowly the pad swells; the wind brings waves and a hiss of air; rain brings soft noise and droplets;
+   clear nights bring sparse bells. */
+let A = null;
+const MODES = {night: [50, 53, 57, 60, 62, 64, 65], dawn: [53, 57, 59, 60, 64, 65, 67], day: [55, 59, 62, 64, 66, 67, 69], dusk: [51, 55, 58, 60, 62, 63, 67]};
+const CHORDS = [[0, 2, 4, 6], [3, 5, 0, 2], [5, 0, 2, 4], [1, 3, 5, 0]];
+const hz = m => 440 * 2 ** ((m - 69) / 12);
+function modeFor(alt, rising){ return alt < -6 ? "night" : alt < 6 ? (rising ? "dawn" : "dusk") : "day"; }
+function startAudio(){
+  const ac = new (window.AudioContext || window.webkitAudioContext)();
+  const out = ac.createGain(); out.gain.value = 0; out.connect(ac.destination);
+  const comp = ac.createDynamicsCompressor(); comp.threshold.value = -18; comp.ratio.value = 3; comp.connect(out);
+  /* a hall made of decaying noise */
+  const ir = ac.createBuffer(2, ac.sampleRate * 5, ac.sampleRate);
+  for(let ch = 0; ch < 2; ch++){ const d = ir.getChannelData(ch); for(let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length) ** 2.6; }
+  const verb = ac.createConvolver(); verb.buffer = ir; const wet = ac.createGain(); wet.gain.value = .55; verb.connect(wet); wet.connect(comp);
+  const dry = ac.createGain(); dry.gain.value = .6; dry.connect(comp);
+  const bus = ac.createGain(); bus.connect(dry); bus.connect(verb);
+  /* the pad: four voices, each two detuned oscillators through one shared filter */
+  const lp = ac.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 900; lp.Q.value = .6; lp.connect(bus);
+  const swell = ac.createGain(); swell.gain.value = .5; swell.connect(lp);
+  const lfo = ac.createOscillator(), lfoAmt = ac.createGain(); lfo.frequency.value = .05; lfoAmt.gain.value = .2; lfo.connect(lfoAmt); lfoAmt.connect(swell.gain); lfo.start();
+  const voices = Array.from({length: 4}, (_, i) => {
+    const g = ac.createGain(); g.gain.value = .07; g.connect(swell);
+    const o1 = ac.createOscillator(), o2 = ac.createOscillator(); o1.type = "triangle"; o2.type = "sine"; o2.detune.value = 7 + i * 2;
+    o1.connect(g); o2.connect(g); o1.start(); o2.start(); return {o1, o2, g};
+  });
+  /* noise for waves, air and rain */
+  const nb = ac.createBuffer(1, ac.sampleRate * 3, ac.sampleRate), nd = nb.getChannelData(0);
+  let b0 = 0; for(let i = 0; i < nd.length; i++){ b0 = .97 * b0 + .03 * (Math.random() * 2 - 1); nd[i] = b0 * 3; }
+  const noise = (type, f, q) => { const s = ac.createBufferSource(); s.buffer = nb; s.loop = true; const fl = ac.createBiquadFilter(); fl.type = type; fl.frequency.value = f; fl.Q.value = q; const g = ac.createGain(); g.gain.value = 0; s.connect(fl); fl.connect(g); g.connect(bus); s.start(); return {g, fl}; };
+  const air = noise("lowpass", 500, .3), rain = noise("bandpass", 4200, .6), waves = noise("lowpass", 700, .4);
+  A = {ac, out, lp, lfo, voices, air, rain, waves, chord: -1, mode: "", nextBell: 0, nextWave: 0, nextChord: 0, nextDrop: 0, bus};
+  setVolume(); return A;
+}
+function bell(m, when, amp){
+  const {ac, bus} = A, g = ac.createGain(); g.connect(bus); g.gain.setValueAtTime(0, when); g.gain.linearRampToValueAtTime(amp, when + .01); g.gain.exponentialRampToValueAtTime(.0001, when + 5);
+  for(const [r, a] of [[1, 1], [2.76, .35], [5.4, .12]]){ const o = ac.createOscillator(); o.frequency.value = hz(m) * r; const og = ac.createGain(); og.gain.value = a; o.connect(og); og.connect(g); o.start(when); o.stop(when + 5.2); }
+}
+function tickAudio(st){
+  if(!A) return;
+  const {ac} = A, now = ac.currentTime, alt = st.s.alt, rising = st.td ? st.td.rising : true;
+  const mode = modeFor(alt, rising), scale = MODES[mode];
+  /* a new chord every half minute or so, gliding in */
+  if(now > A.nextChord || mode !== A.mode){
+    A.mode = mode; A.chord = (A.chord + 1 + Math.floor(Math.random() * 2)) % CHORDS.length; A.nextChord = now + 24 + Math.random() * 18;
+    CHORDS[A.chord].forEach((d, i) => { const f = hz(scale[d] - 12 + (i === 0 ? -12 : 0)); A.voices[i].o1.frequency.setTargetAtTime(f, now, 3); A.voices[i].o2.frequency.setTargetAtTime(f, now, 3); });
+  }
+  /* brighter by day, darker by night and under heavy cloud */
+  A.lp.frequency.setTargetAtTime(420 + 1900 * st.day * (1 - st.cloud / 220), now, 4);
+  /* the tide sets the swell: faster as the water moves faster */
+  const pace = st.td ? Math.min(1, Math.abs(tideAt(Date.now() + 18e5)?.v - st.td.v) / 1.2) : .3;
+  A.lfo.frequency.setTargetAtTime(.03 + .07 * pace, now, 5);
+  const wind = wx ? wx.wind : 4, wet = wx && (isRain(wx.code) || wx.precip > .1) ? Math.min(1, .25 + wx.precip / 3) : 0;
+  A.air.g.gain.setTargetAtTime(Math.min(.22, wind / 120), now, 3); A.air.fl.frequency.setTargetAtTime(300 + wind * 30, now, 3);
+  A.rain.g.gain.setTargetAtTime(wet * .1, now, 3);
+  /* waves washing in */
+  if(now > A.nextWave){
+    const g = A.waves.g.gain, peak = .05 + Math.min(.12, wind / 160), len = 3 + Math.random() * 2;
+    g.cancelScheduledValues(now); g.setValueAtTime(g.value, now); g.linearRampToValueAtTime(peak, now + len * .45); g.linearRampToValueAtTime(.004, now + len);
+    A.waves.fl.frequency.setValueAtTime(500, now); A.waves.fl.frequency.linearRampToValueAtTime(1100, now + len * .4); A.waves.fl.frequency.linearRampToValueAtTime(400, now + len);
+    A.nextWave = now + len + 2 + Math.random() * 5 * (1 - Math.min(1, wind / 25));
+  }
+  /* droplets in rain */
+  if(wet && now > A.nextDrop){ bell(scale[Math.floor(Math.random() * scale.length)] + 24, now, .015 * wet); A.nextDrop = now + .3 + Math.random() * 1.4 / wet; }
+  /* bells: often on clear nights, now and then by day, rarely under cloud */
+  if(now > A.nextBell){
+    const clear = 1 - st.cloud / 100, often = mode === "night" ? .4 + clear : .25 + clear * .4;
+    if(Math.random() < often) bell(scale[Math.floor(Math.random() * scale.length)] + (Math.random() < .5 ? 0 : 12), now, .05);
+    A.nextBell = now + 3 + Math.random() * 7;
+  }
+}
+function setVolume(){ if(A) A.out.gain.setTargetAtTime(+$("volume").value * .9, A.ac.currentTime, .8); }
+
+/* ================= controls ================= */
+let lapse = false, lapseFrom = 0, lapseStart = 0;
+const simTime = now => lapse ? lapseFrom + (now - lapseStart) * 1440 : Date.now();   /* a day in a minute: 1440× */
+$("listen").onclick = async () => {
+  try {
+    if(!A){ startAudio(); }
+    if(A.ac.state === "suspended") await A.ac.resume();
+    const on = $("listen").getAttribute("aria-pressed") !== "true";
+    $("listen").setAttribute("aria-pressed", on); $("listen").textContent = on ? "Listening" : "Listen"; $("vol").classList.toggle("on", on);
+    if(on) setVolume(); else A.out.gain.setTargetAtTime(0, A.ac.currentTime, .6);
+  } catch(e){ $("listen").textContent = "No sound here"; }
+};
+$("volume").oninput = setVolume;
+$("lapse").onclick = () => {
+  lapse = !lapse; lapseStart = performance.now(); lapseFrom = Date.now();
+  $("lapse").setAttribute("aria-pressed", lapse); $("lapse").textContent = lapse ? "Back to now" : "A day in a minute";
+};
+$("full").onclick = () => { try { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); } catch(e){} };
+/* the words and buttons fade after a while, and come back when you move or tap */
+let idleAt = performance.now();
+const wake = () => { idleAt = performance.now(); $("ui").classList.remove("idle"); };
+["mousemove", "pointerdown", "keydown", "touchstart"].forEach(ev => addEventListener(ev, wake, {passive: true}));
+
+/* ================= run ================= */
+let lastWords = 0, lastFrame = 0;
+function frame(now){
+  requestAnimationFrame(frame);
+  if(now - lastFrame < 33) return; lastFrame = now;              /* about 30 frames a second is plenty */
+  const t = simTime(now);
+  if(lapse && t > lapseFrom + 864e5){ lapse = false; $("lapse").setAttribute("aria-pressed", false); $("lapse").textContent = "A day in a minute"; }
+  const st = draw(t, now);
+  if(now - lastWords > 500){ words(t); lastWords = now; tickAudio(st); }
+  if(now - idleAt > 7000) $("ui").classList.add("idle");
+}
+resize();
+Promise.allSettled([loadTide(), loadWeather()]).then(() => words(Date.now()));
+setInterval(loadWeather, 15 * 6e4);
+setInterval(loadTide, 6 * 36e5);
+requestAnimationFrame(frame);
+}
+</script>
+</body>
+</html>
