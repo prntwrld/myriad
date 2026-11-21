@@ -194,7 +194,7 @@ async function recordNode(t){
 /* ---------- the year dial ---------- */
 async function dial(j){
   const years = j ? Object.keys(j.years).filter(y => j.years[y].length >= 6).map(Number) : [];
-  const lo = years.length ? Math.min(...years) : 1955, hi = years.length ? Math.max(...years) : new Date().getFullYear() - 1;
+  const lo = years.length ? Math.min(...years) : 1955, hi = new Date().getFullYear() - 1; // years the file doesn't hold yet are asked live
   const r = D.rng("metronome-dial-" + D.today());
   const start = Math.max(lo, Math.min(hi, 1960 + Math.floor(r() * 50)));
   const sec = $("d-dial");
